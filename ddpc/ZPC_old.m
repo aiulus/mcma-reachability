@@ -79,8 +79,7 @@ for i=1:size(W.generators,2)
     end
 end
 % matrix zonotpe of noise w (M_w)
-GmatW = cat(3, GW{:});
-Wmatzono = matZonotope(zeros(dim_x,totalsamples), GmatW);
+Wmatzono= matZonotope(zeros(dim_x,totalsamples),GW);
 
 %measurement noise
 %less measurement noise
@@ -97,8 +96,7 @@ for i=1:size(V.generators,2)
     end
 end
 % matrix zonotpe of noise v (M_v)
-GmatV = cat(3, GV{:});
-Vmatzono = matZonotope(CV, GmatV);
+Vmatzono= matZonotope(CV,GV);
 
 AV = sys_d.A*V;
 % matrix zonotpe of  Av (M_Av)
@@ -208,31 +206,19 @@ for timesteps = 1:maxsteps
     Constraints = [y_t(:,timesteps) == y{1}];%,...
    
     
-    for i = 1:N        
-        genleni = size(R{i}.generators,2);
+    for i = 1:N
         %compute the reachable set for ZPC
-        %card_cen = [R{i}.center;u{i}];        
-        %card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
-        placeholder_u = uref;  % safe numeric value
-        dummy_cen = [R{i}.center; placeholder_u];
-        dummy_gen = [R{i}.generators; zeros(1, genleni)];
-        card_zono = zonotope(dummy_cen, dummy_gen);
-
-        
-        ABcard = [sys_d.A , sys_d.B]* card_zono;
+        card_cen = [R{i}.center;u{i}];
+        genleni = size(R{i}.generators,2);
+        card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
+        ABcard = intervalMatrix(AB)* card_zono;
         R{i+1} = zonotope([ABcard.center,[ABcard.generators,W.generators,V.generators,AV.generators]]);%AB * card_zono + W_sdp;
-       
-
-        % AB * card_zono + W_sdp;
-        %G_next = [ABcard.generators, W.generators, V.generators, AV.generators];
-        % Use symbolic card_cen as center here
-        %R{i+1} = zonotope(card_cen, G_next);
-
-        % convert R to interval
-        % extract center, determine left and right limit of the reahable set
-        c = R{i+1}.c;
-        delta = sum(abs(R{i+1}.G),2);
+        %convert R to interval
+        %extract center
+        c = R{i+1}.Z(:,1);
         
+        %determine left and right limit of the reahable set (convert to
+        %interval)
         delta = sum(abs(R{i+1}.Z),2) - abs(c);
         leftLimit{i} = c - delta;
         rightLimit{i} = c + delta;
@@ -267,11 +253,11 @@ for timesteps = 1:maxsteps
     %%
 
     %% save for plotting
-    Rplotall{timesteps} = interval(zonotope(R{2}.c, R{2}.G));
+    Rplotall{timesteps}= interval(zonotope([ double(R{2}.center), double(R{2}.generators)]));
     %%  ploting
     if chosedtimestep == timesteps
         for i =1:N+1
-            RoverN{i} = zonotope(R{i}.c, R{i}.G);
+            RoverN{i}= zonotope([ double(R{i}.center), double(R{i}.generators)]) ;
             RoverN_int{i} = interval(RoverN{i});
             yoverN{i} =double(y{i});
             if i<N+1
@@ -293,22 +279,20 @@ for timesteps = 1:maxsteps
     y_model = sdpvar(5*ones(1,N+1),ones(1,N+1));
     Constraints = [y_t_model(:,timesteps) == y_model{1}];
     for i = 1:N
-        %compute the reachable set for ZPC
+        %card_cen = [y{i};u_model{i}];
+        card_cen = [R{i}.center;u_model{i}];
         genleni = size(R{i}.generators,2);
-        %card_cen = [R{i}.center;u{i}];        
-        %card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
-        % Use numeric placeholder for center in zonotope creation
-        placeholder_u = uref;  % safe numeric value
-        dummy_cen = [R{i}.center; placeholder_u];
-        dummy_gen = [R{i}.generators; zeros(1, genleni)];
-        card_zono = zonotope(dummy_cen, dummy_gen);
-
-        ABcard = intervalMatrix(AB)* card_zono;
+        card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
+        % give it true A B
+        ABcard = [sys_d.A , sys_d.B]* card_zono;
         R{i+1} = zonotope([ABcard.center,[ABcard.generators,W.generators,V.generators,AV.generators]]);%AB * card_zono + W_sdp;
-        %convert R to interval
+       
+        
+        %same as before convert R to interval
         %extract center
-        c = R{i+1}.Z(:,1);      
-    
+        c = R{i+1}.Z(:,1);
+        
+        %determine left and right limit
         delta = sum(abs(R{i+1}.Z),2) - abs(c);
         leftLimit{i} = c - delta;
         rightLimit{i} = c + delta;
@@ -373,5 +357,5 @@ meanRMPCtime= mean(execTimeRMPC)
 stdRMPCtime= std(execTimeRMPC)
 
 %save the workspace
-save('zonoDDSF\ddpc\workspaces\ZPC');
+save('workspaces\ZPC');
 %next run plotPolyZono for plotting

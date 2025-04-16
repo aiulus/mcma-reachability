@@ -211,13 +211,8 @@ for timesteps = 1:maxsteps
     for i = 1:N        
         genleni = size(R{i}.generators,2);
         %compute the reachable set for ZPC
-        %card_cen = [R{i}.center;u{i}];        
-        %card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
-        placeholder_u = uref;  % safe numeric value
-        dummy_cen = [R{i}.center; placeholder_u];
-        dummy_gen = [R{i}.generators; zeros(1, genleni)];
-        card_zono = zonotope(dummy_cen, dummy_gen);
-
+        card_cen = [R{i}.center;u{i}];        
+        card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
         
         ABcard = [sys_d.A , sys_d.B]* card_zono;
         R{i+1} = zonotope([ABcard.center,[ABcard.generators,W.generators,V.generators,AV.generators]]);%AB * card_zono + W_sdp;
@@ -373,5 +368,5 @@ meanRMPCtime= mean(execTimeRMPC)
 stdRMPCtime= std(execTimeRMPC)
 
 %save the workspace
-save('zonoDDSF\ddpc\workspaces\ZPC');
+save('workspaces\ZPC');
 %next run plotPolyZono for plotting
