@@ -71,7 +71,6 @@ for plotRun=1:length(projectedDims3d)
     ax.Position = [left bottom ax_width ax_height];
     % added later
     filename = sprintf('%s_loop1_%d.pdf', baseName, plotRun);
-    exportgraphics(fig, fullfile('zonoDDSF','ddpc','outputs', filename), 'ContentType','vector');
     exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
 end
 
@@ -113,7 +112,6 @@ for plotRun=1:length(projectedDims)
     ax.Position = [left bottom ax_width ax_height];
     % added later
     filename = sprintf('%s_loop2_%d.pdf', baseName, plotRun);
-    exportgraphics(fig, fullfile('zonoDDSF','ddpc','outputs', filename), 'ContentType','vector');
     exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
 end
 %sys_d.A*ref+sys_d.B*double(u{1})-ref
@@ -182,7 +180,6 @@ for plotRun=1:length(projectedDims)
     ax.Position = [left bottom ax_width ax_height];
     % added later
     filename = sprintf('%s_loop3_%d.pdf', baseName, plotRun);
-    exportgraphics(fig, fullfile('zonoDDSF','ddpc','outputs', filename), 'ContentType','vector');
     exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
 end
 %% ---------------------- plot y's ZPC----------------------------------------%%
