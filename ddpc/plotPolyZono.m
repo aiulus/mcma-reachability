@@ -1,9 +1,26 @@
 clear all
 close all
 
+% Choose base data file (without `.mat` extension)
+% baseName = 'ZPC';
+baseName = 'ZPC_in4st100W0.01V0.002';
+%baseNamePoly = strrep(baseName, 'ZPC', 'poly');
+baseNamePoly = 'poly_W0.01V0.002';
+
+% Define output folder
+outputFolder = fullfile('zonoDDSF', 'ddpc', 'outputs');
+if ~exist(outputFolder, 'dir')
+    mkdir(outputFolder);
+end
+
+% Load workspaces
+load(['workspaces\' baseName '.mat']);                 % ZPC workspace
+load(fullfile('workspaces', [baseNamePoly '.mat']));   % Poly workspace 
+
+
 %load work spaces
-load('workspaces\poly')
-load('workspaces\ZPC')
+%load('workspaces\poly')
+%load('workspaces\ZPC')
 
 %less noise
 %initpoints 4 step 100
@@ -19,7 +36,7 @@ load('workspaces\ZPC')
 %% plot 3d reachable sets over steps
 projectedDims3d = {[1 2 3],[3 4 5]};
 for plotRun=1:length(projectedDims3d)
-    figure('Renderer', 'painters', 'Position', [10 10 900 900]);
+    fig = figure('Renderer', 'painters', 'Position', [10 10 900 900]);
     hold on;
     box on;
     for i=1:maxsteps
@@ -52,12 +69,16 @@ for plotRun=1:length(projectedDims3d)
     ax_width = outerpos(3) - ti(1) - ti(3)-0.04;
     ax_height = outerpos(4) - ti(2) - ti(4);
     ax.Position = [left bottom ax_width ax_height];
+    % added later
+    filename = sprintf('%s_loop1_%d.pdf', baseName, plotRun);
+    exportgraphics(fig, fullfile('zonoDDSF','ddpc','outputs', filename), 'ContentType','vector');
+    exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
 end
 
 %% plot 2d reachable sets over steps
 projectedDims = {[1 2],[3 4],[4 5]};
 for plotRun=1:length(projectedDims)
-    figure('Renderer', 'painters', 'Position', [10 10 700 900]);
+    fig = figure('Renderer', 'painters', 'Position', [10 10 700 900]);
     hold on;
     box on;
     for i=1:maxsteps
@@ -90,11 +111,15 @@ for plotRun=1:length(projectedDims)
     ax_width = outerpos(3) - ti(1) - ti(3)-0.04;
     ax_height = outerpos(4) - ti(2) - ti(4);
     ax.Position = [left bottom ax_width ax_height];
+    % added later
+    filename = sprintf('%s_loop2_%d.pdf', baseName, plotRun);
+    exportgraphics(fig, fullfile('zonoDDSF','ddpc','outputs', filename), 'ContentType','vector');
+    exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
 end
 %sys_d.A*ref+sys_d.B*double(u{1})-ref
 %pinv(sys_d.B)*(eye(5)-sys_d.A)*[1;0;0;0;0]
 
-figure('Renderer', 'painters', 'Position', [10 10 700 800]);
+fig = figure('Renderer', 'painters', 'Position', [10 10 700 800]);
 box on;
 hold on
 han_pred=plot(uPred,'b*-');
@@ -118,9 +143,11 @@ ax_width = outerpos(3) - ti(1) - ti(3)-0.01;
 ax_height = outerpos(4) - ti(2) - ti(4);
 ax.Position = [left bottom ax_width ax_height];
 %%-----------------------R over N-------------------------------------------%%
+% added later
+exportgraphics(fig, fullfile(outputFolder, sprintf('%s_solo_1.pdf', baseName)), 'ContentType','vector');
 
 for plotRun=1:length(projectedDims)
-    figure('Renderer', 'painters', 'Position', [10 10 700 900]);
+    fig = figure('Renderer', 'painters', 'Position', [10 10 700 900]);
     hold on;
     box on;
     for i=2:N+1
@@ -153,9 +180,13 @@ for plotRun=1:length(projectedDims)
     ax_width = outerpos(3) - ti(1) - ti(3)-0.01;
     ax_height = outerpos(4) - ti(2) - ti(4);
     ax.Position = [left bottom ax_width ax_height];
+    % added later
+    filename = sprintf('%s_loop3_%d.pdf', baseName, plotRun);
+    exportgraphics(fig, fullfile('zonoDDSF','ddpc','outputs', filename), 'ContentType','vector');
+    exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
 end
 %% ---------------------- plot y's ZPC----------------------------------------%%
-figure('Renderer', 'painters', 'Position', [10 10 700 800]);
+fig = figure('Renderer', 'painters', 'Position', [10 10 700 800]);
 hold on
 box on;
 %for i =1:dim_x
@@ -190,6 +221,8 @@ bottom = outerpos(2) + ti(2);
 ax_width = outerpos(3) - ti(1) - ti(3)-0.01;
 ax_height = outerpos(4) - ti(2) - ti(4);
 ax.Position = [left bottom ax_width ax_height];
+% added later
+exportgraphics(fig, fullfile(outputFolder, sprintf('%s_solo_2.pdf', baseName)), 'ContentType','vector');
 
 %legend([handy{1},handy{2},handy{3},handy{4},handy{5}],...
 %        'y1','y2','y3','y4','y5','Location','northwest');
@@ -233,7 +266,7 @@ ax.Position = [left bottom ax_width ax_height];
 %        'y1','y2','y3','y4','y5','Location','northwest');
 
 %% -------------------------ZPC yt2ref-------------------------------------
-figure('Renderer', 'painters', 'Position', [10 10 700 800]);
+fig = figure('Renderer', 'painters', 'Position', [10 10 700 800]);
 hold on
 box on;
 han_yt2ref_poly=plot(yt2ref_poly,'r-');
@@ -253,10 +286,12 @@ bottom = outerpos(2) + ti(2);
 ax_width = outerpos(3) - ti(1) - ti(3)-0.01;
 ax_height = outerpos(4) - ti(2) - ti(4);
 ax.Position = [left bottom ax_width ax_height];
+% added later
+exportgraphics(fig, fullfile('zonoDDSF\ddpc\outputs','ZPC_solo_3.pdf'), 'ContentType','vector');
 
 
 %% ------------------------- cost -------------------------------------
-figure('Renderer', 'painters', 'Position', [10 10 700 800]);
+fig = figure('Renderer', 'painters', 'Position', [10 10 700 800]);
 hold on
 box on;
 han_yt2ref_poly=plot(Cost_rob_ol,'r-');
@@ -276,12 +311,14 @@ bottom = outerpos(2) + ti(2);
 ax_width = outerpos(3) - ti(1) - ti(3)-0.01;
 ax_height = outerpos(4) - ti(2) - ti(4);
 ax.Position = [left bottom ax_width ax_height];
+% added later
+exportgraphics(fig, fullfile(outputFolder, sprintf('%s_solo_4.pdf', baseName)), 'ContentType','vector');
 
 %% %%%%%%%%%%%%%%%%%% constrain on y2%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
-figure('Renderer', 'painters', 'Position', [10 10 700 800]);
+fig = figure('Renderer', 'painters', 'Position', [10 10 700 800]);
 hold on
 box on;
 hand_y_t= plot(y_t(2,:),'b*-');
@@ -305,3 +342,5 @@ bottom = outerpos(2) + ti(2);
 ax_width = outerpos(3) - ti(1) - ti(3)-0.01;
 ax_height = outerpos(4) - ti(2) - ti(4);
 ax.Position = [left bottom ax_width ax_height];
+% added later
+exportgraphics(fig, fullfile(outputFolder, sprintf('%s_solo_5.pdf', baseName)), 'ContentType','vector');
