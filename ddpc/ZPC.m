@@ -348,8 +348,6 @@ for timesteps = 1:maxsteps
     halt = 1;
 end
 
-
-
 Cost_model=0;
 for i=1:timesteps
     Cost_model_vec(i) = (y_t_model(:,i+1)-ref)'*Qy*(y_t_model(:,i+1)-ref)+ (uPred_model(:,i)-uref)'*Qu*(uPred_model(:,i)-uref);
