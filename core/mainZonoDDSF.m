@@ -13,41 +13,37 @@
 %
 % See also: ---
 
-% Author:       Amr Alanwar, Yvonne Stürz 
-% Written:      25-March-2021 
+% Original Author:       Amr Alanwar, Yvonne Stürz 
+% Adapted by: Aybüke Ulusarslan, Yongkuan Zhang
 % Last update:  ---
 % Last revision:---
 
 %------------- BEGIN CODE --------------
+
+%% INITIAL SETUP
 rand('seed',4500);
 
 clear all
 close all
 
-% dimension of x
-dim_x = 5;
+%% SYSTEM SETUP
+systype = 'example0'; % system type
+dt = 0.05; % sampling time
+sys = systemsZonoDDSF(systype, dt);
+sys_c = sys.cont;
+sys_d = sys.discrete;
+dim_x = size(A, 1);
 
-% System in cont time
-A = [-1 -4 0 0 0; 4 -1 0 0 0; 0 0 -3 1 0; 0 0 -1 -3 0; 0 0 0 0 -2];
-B_ss = ones(5,1);
-C = [1,0,0,0,0];
-D = 0;
-% define continuous time system
-sys_c = ss(A,B_ss,C,D);
-% convert to discrete system
-samplingtime = 0.05;
-sys_d = c2d(sys_c,samplingtime);
-%number of trajectories
-initpoints =100;
-%number of steps for each trajectory
-steps =5;
-%Total number of samples
-totalsamples = initpoints*steps;
+%% SIMULATION SETUP
+initpoints =100; % number of trajectories
+steps =5; % number of steps for each trajectory
+totalsamples = initpoints*steps; %Total number of samples
+
 %% initial set and input
-%reference input
-uref = 8;
-%reference output
-ref = inv(eye(5)-sys_d.A)*sys_d.B*uref; 
+
+r_u = 8; %reference input
+%% TODO: add error handling for the inverse
+r_y = inv(eye(5)-sys_d.A)*sys_d.B*r_u; %reference output
 
 %output constraint
 y_lb = [-10;2;-10;-10;-10]; 
@@ -58,11 +54,12 @@ intc = interval(y_lb,y_ub);
 %initial point
 y0 = [-2;4;3;-2.5;5.5];
 
-%initial zonotope tot generate data
-X0 = zonotope([y0,25*diag(ones(dim_x,1))]);
+%initial zonotope to generate data
+initial_uncertainty = 25;
+X0 = zonotope([y0,initial_uncertainty*diag(ones(dim_x,1))]);
 
 %input zonotope
-U = zonotope([uref-1,20-1]);
+U = zonotope([r_u-1,20-1]);
 
 %noise zontope W (modeling noise)
 w_spread_factor=0.01; % controlls process noise levels
@@ -208,7 +205,7 @@ for timesteps = 1:maxsteps
         %compute the reachable set for ZPC
         %card_cen = [R{i}.center;u{i}];        
         %card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
-        placeholder_u = uref;  % safe numeric value
+        placeholder_u = r_u;  % safe numeric value
         dummy_cen = [R{i}.center; placeholder_u];
         dummy_gen = [R{i}.generators; zeros(1, genleni)];
         card_zono = zonotope(dummy_cen, dummy_gen);
@@ -249,7 +246,7 @@ for timesteps = 1:maxsteps
     % chose the cost of ZPC
     Cost=0;
     for i=1:N
-        Cost = Cost + (y{i+1}-ref)'*Qy*(y{i+1}-ref)+ (u{i}-uref)'*Qu*(u{i}-uref);
+        Cost = Cost + (y{i+1}-r_y)'*Qy*(y{i+1}-r_y)+ (u{i}-r_u)'*Qu*(u{i}-r_u);
     end
     %solve ZPC
     options = sdpsettings('verbose',0,'solver','mosek');
@@ -293,7 +290,7 @@ for timesteps = 1:maxsteps
         %card_cen = [R{i}.center;u{i}];        
         %card_zono = zonotope([card_cen,[R{i}.generators;zeros(1,genleni)]]);
         % Use numeric placeholder for center in zonotope creation
-        placeholder_u = uref;  % safe numeric value
+        placeholder_u = r_u;  % safe numeric value
         dummy_cen = [R{i}.center; placeholder_u];
         dummy_gen = [R{i}.generators; zeros(1, genleni)];
         card_zono = zonotope(dummy_cen, dummy_gen);
@@ -326,7 +323,7 @@ for timesteps = 1:maxsteps
     
     Cost_model=0;
     for i=1:N
-        Cost_model = Cost_model + (y_model{i+1}-ref)'*Qy*(y_model{i+1}-ref)+ (u_model{i}-uref)'*Qu*(u_model{i}-uref);
+        Cost_model = Cost_model + (y_model{i+1}-r_y)'*Qy*(y_model{i+1}-r_y)+ (u_model{i}-r_u)'*Qu*(u_model{i}-r_u);
     end
     options = sdpsettings('verbose',0,'solver','mosek');
     tic
@@ -343,8 +340,8 @@ for timesteps = 1:maxsteps
     y_t(:,timesteps+1) = sys_d.A * y_t(:,timesteps) + sys_d.B * uPred(timesteps) + w_point +v_point - sys_d.A *v_point;
     y_t_model(:,timesteps+1) = sys_d.A * y_t_model(:,timesteps) + sys_d.B * uPred_model(timesteps) + w_point +v_point - sys_d.A *v_point;
     
-    yt2ref(timesteps)= norm(y_t(:,timesteps)-ref,2)
-    yt2ref_model(timesteps)= norm(y_t_model(:,timesteps)-ref,2)
+    yt2ref(timesteps)= norm(y_t(:,timesteps)-r_y,2)
+    yt2ref_model(timesteps)= norm(y_t_model(:,timesteps)-r_y,2)
     halt = 1;
 end
 
@@ -352,14 +349,14 @@ end
 
 Cost_model=0;
 for i=1:timesteps
-    Cost_model_vec(i) = (y_t_model(:,i+1)-ref)'*Qy*(y_t_model(:,i+1)-ref)+ (uPred_model(:,i)-uref)'*Qu*(uPred_model(:,i)-uref);
+    Cost_model_vec(i) = (y_t_model(:,i+1)-r_y)'*Qy*(y_t_model(:,i+1)-r_y)+ (uPred_model(:,i)-r_u)'*Qu*(uPred_model(:,i)-r_u);
     Cost_model = Cost_model + Cost_model_vec(i);
 
 end
 
 Cost=0;
 for i=1:timesteps
-    Cost_vec(i) = (y_t(:,i+1)-ref)'*Qy*(y_t(:,i+1)-ref)+ (uPred(:,i)-uref)'*Qu*(uPred(:,i)-uref);
+    Cost_vec(i) = (y_t(:,i+1)-r_y)'*Qy*(y_t(:,i+1)-r_y)+ (uPred(:,i)-r_u)'*Qu*(uPred(:,i)-r_u);
     Cost = Cost + Cost_vec(i);
 end
 meanZPCtime= mean(execTimeZPC)

@@ -71,7 +71,9 @@ for plotRun=1:length(projectedDims3d)
     ax.Position = [left bottom ax_width ax_height];
     % added later
     filename = sprintf('%s_loop1_%d.pdf', baseName, plotRun);
+    filename_png = sprintf('%s_loop1_%d.png', baseName, plotRun);
     exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
+    exportgraphics(fig, fullfile(outputFolder, filename), 'Resolution', 600);
 end
 
 %% plot 2d reachable sets over steps
@@ -112,7 +114,9 @@ for plotRun=1:length(projectedDims)
     ax.Position = [left bottom ax_width ax_height];
     % added later
     filename = sprintf('%s_loop2_%d.pdf', baseName, plotRun);
+    filename_png = sprintf('%s_loop2_%d.png', baseName, plotRun);
     exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
+    exportgraphics(fig, fullfile(outputFolder, filename), 'Resolution', 600);
 end
 %sys_d.A*ref+sys_d.B*double(u{1})-ref
 %pinv(sys_d.B)*(eye(5)-sys_d.A)*[1;0;0;0;0]
@@ -180,7 +184,9 @@ for plotRun=1:length(projectedDims)
     ax.Position = [left bottom ax_width ax_height];
     % added later
     filename = sprintf('%s_loop3_%d.pdf', baseName, plotRun);
+    filename_png = sprintf('%s_loop3_%d.png', baseName, plotRun);
     exportgraphics(fig, fullfile(outputFolder, filename), 'ContentType','vector');
+    exportgraphics(fig, fullfile(outputFolder, filename), 'Resolution', 600);
 end
 %% ---------------------- plot y's ZPC----------------------------------------%%
 fig = figure('Renderer', 'painters', 'Position', [10 10 700 800]);
