@@ -35,7 +35,8 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
         delta = sum(abs(R{i+1}.Z), 2) - abs(c);         % delta computation
         leftLimit{i}  = c - delta;
         rightLimit{i} = c + delta;
-
+        
+        %% TODO: add terminal constraints
         % ---- Constraints as in original ----
         Constraints = [Constraints, ...
             u{i} == U.center + alpha_u(i) * U.generators, ...

@@ -1,6 +1,8 @@
-function [uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
-    runZonoDDSF(sys_d, y0, intc, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma)
+function [uPred, uPred_model, u_l_hist, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
+    runZonoDDSF(sys, y0, intc, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma)
     
+    sys_d = sys.discrete;
+
     %% PREALLOCATION STEPS
     p = size(y0,1);
     y_t = zeros(p, maxsteps + 1);
@@ -26,7 +28,14 @@ function [uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
     y_N = cell(1, N+1);
     u_N = cell(1, N);
 
+    u_l_hist = zeros(sys.dims.m, maxsteps);
+
     for k = 1:maxsteps
+        %% generate u_l
+        rand_mode = 'prbs'; constr_scale = 1.25;
+        u_l = getRandomInput(sys, N, rand_mode, constr_scale);
+        u_l_hist(:, k) = u_l(:, 1);
+
         if k == 1
             [y_t, y_t_model, YPred] = runZPCinitializeY0(y0, y_t, y_t_model, YPred, k);
         end
@@ -37,7 +46,7 @@ function [uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
 
         %% Compute ZPC problem
         [uPred(k), YPred(:,k+1), u, y, execTimeZPC(k), R, Rplotall{k}] = ...
-            solveZDDSF(R, y_t(:,k), sys_d, N, Q, W, V, AV, intc, k, maxsteps, p);
+            solveZDDSF(R, y_t(:,k), sys, N, U, Q, W, V, AV, k, maxsteps, u_l);
 
         %%  Plot
         if timestep_plot == k
@@ -53,14 +62,14 @@ function [uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
 
         %% ZPC given the model (RMPC-zono)
         [uPred_model(k), YPred_model(:,k+1), execTimeRMPC(k)] = ...
-             solveRDDSF(y_t_model(:,k), M_Sigma, N,  U, Q, W, V, AV, intc, p);	
+             solveRDDSF(sys, y_t_model(:,k), M_Sigma, N,  U, Q, W, V, AV, u_l);	
         
         %% Apply the optimal control input
         [y_t(:,k+1), y_t_model(:,k+1)] = ...
             sysIter(y_t(:,k), y_t_model(:,k), uPred(k), uPred_model(k), sys_d, W, V);
         
-        yt2ref(k) = norm(y_t(:,k)-r_y,2);
-        yt2ref_model(k) = norm(y_t_model(:,k)-r_y,2);
+        %yt2ref(k) = norm(y_t(:,k)-r_y,2);
+        %yt2ref_model(k) = norm(y_t_model(:,k)-r_y,2);
 
         %% TODO: Find out why this is here
         % halt = 1;

@@ -98,18 +98,18 @@ maxsteps = 80;
 % time step for plotting 
 timestep_plot = 10;
 
-[uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] =  runZonoDDSF( ...
-    sys_d, y0, intc, r_u, r_y, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma);          
+[uPred, uPred_model, u_l_hist, y_t, y_t_model, execTimeZPC, execTimeRMPC] =  runZonoDDSF( ...
+    sys, y0, intc, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma);          
 
 Cost_model=0;
 for i=1:maxsteps
-    Cost_model_vec(i) = (uPred_model(:,i) - u_l(:, i))'*Q*(uPred_model(:,i) - u_l(:, i));
+    Cost_model_vec(i) = (uPred_model(:,i) - u_l_hist(:, i))'*Q*(uPred_model(:,i) - u_l_hist(:, i));
     Cost_model = Cost_model + Cost_model_vec(i);
 end
 
 Cost=0;
 for i=1:maxsteps
-    Cost_vec(i) = (uPred(:,i) - u_l(:, i))'*Q *(uPred(:,i) - u_l(:, i));
+    Cost_vec(i) = (uPred(:,i) - u_l_hist(:, i))'*Q *(uPred(:,i) - u_l_hist(:, i));
     Cost = Cost + Cost_vec(i);
 end
 meanZPCtime = mean(execTimeZPC)

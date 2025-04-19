@@ -1,8 +1,8 @@
 function u_l = getRandomInput(sys, N, rand_mode, constr_scale)
     m = sys.dims.m;
 
-    lb = sys.intc.inf;
-    ub = sys.intc.sup;
+    lb = sys.bcs.intc.inf;
+    ub = sys.bcs.intc.sup;
 
     lb = lb*constr_scale; ub = ub*constr_scale;
     

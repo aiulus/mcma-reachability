@@ -2,7 +2,7 @@ clear all
 close all
 
 % Choose base data file (without `.mat` extension)
-baseName = 'ZPC';
+baseName = 'zonoDDSF';
 %baseName = 'ZPC_in4st100W0.01V0.002';
 %baseNamePoly = strrep(baseName, 'ZPC', 'poly');
 baseNamePoly = 'poly_W0.01V0.002';

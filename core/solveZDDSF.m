@@ -1,5 +1,5 @@
 function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
-    solveZDDSF(R, current_y, sys_d, N, U, Q, W, V, AV, intc, k, maxsteps, n)
+    solveZDDSF(R, current_y, sys, N, U, Q, W, V, AV, k, maxsteps, u_l)
     % Inputs match the ZPC planning section in the original function
     % Outputs:
     %   u_opt   - optimal control at step k (scalar)
@@ -7,6 +7,10 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
     %   execTime - time to solve optimization
     %   R_plot - interval zonotope for plotting (R{2})
 
+    sys_d = sys.discrete;
+    n = sys.dims.n;
+    intc = sys.bcs.intc;
+   
     % ---- sdpvar definitions (copied from original ZPC section) ----
     u       = sdpvar(1*ones(1,N), ones(1,N));
     y       = sdpvar(n*ones(1,N+1), ones(1,N+1));
@@ -18,9 +22,6 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
 
     leftLimit  = cell(1, N);
     rightLimit = cell(1, N);
-
-    rand_mode = 'prbs'; constr_scale = 1.25;
-    u_l = getRandomInput(sys, N, rand_mode, constr_scale);
 
     r_u = sys.bcs.U.c;
 
@@ -39,6 +40,7 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
         leftLimit{i}  = c - delta;
         rightLimit{i} = c + delta;
 
+        %% TODO: add terminal constraints
         % ---- Constraints as in original ----
         Constraints = [Constraints, ...
             u{i} == U.center + alpha_u(i) * U.generators, ...
@@ -55,7 +57,7 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
     % ---- Cost function ----
     Cost = 0;
     for i = 1:N
-        Cost = Cost + (u{i} - u_l(:, i))' * Qu * (u{i} - u_l(:, i));
+        Cost = Cost + (u{i} - u_l(:, i))' * Q * (u{i} - u_l(:, i));
     end
 
     % ---- Solve the optimization ----

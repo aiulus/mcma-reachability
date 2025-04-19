@@ -1,9 +1,12 @@
-function [u_opt_model, y_next_model, execTime] = solveRDDSF(current_y_model, M_Sigma, N, U, Q, W, V, AV, intc, n)
+function [u_opt_model, y_next_model, execTime] = solveRDDSF(sys, current_y_model, M_Sigma, N, U, Q, W, V, AV, u_l)
     % Inputs correspond to the RMPC block in original function
     % Outputs:
     %   u_opt_model - optimal control at step k
     %   y_next_model - predicted output for model system
     %   execTime - solve time for optimization
+
+    n = sys.dims.n;
+    intc = sys.bcs.intc;
 
     % ---- sdpvar variables (copied from RMPC block) ----
     alpha_u = sdpvar(1, N);
@@ -18,9 +21,6 @@ function [u_opt_model, y_next_model, execTime] = solveRDDSF(current_y_model, M_S
 
     leftLimit  = cell(1, N);
     rightLimit = cell(1, N);
-
-    rand_mode = 'prbs'; constr_scale = 1.25;
-    u_l = getRandomInput(sys, N, rand_mode, constr_scale);
 
     r_u = sys.bcs.U.c;
 
@@ -40,6 +40,7 @@ function [u_opt_model, y_next_model, execTime] = solveRDDSF(current_y_model, M_S
         leftLimit{i}  = c - delta;
         rightLimit{i} = c + delta;
 
+        %% TODO: add terminal constraints
         % ---- Constraints ----
         Constraints = [Constraints, ...
             u_model{i} == U.center + alpha_u(i) * U.generators, ...
