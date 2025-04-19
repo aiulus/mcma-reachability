@@ -87,36 +87,35 @@ M_Sigma = estimateAB(Y_0T, U_data, Y_1T, VmatZono, WmatZono, VAmatZono, sys_d);
 %Horizon N for ZPC
 N = 2;
 % define output cost matrix
-output_cost_coeff = 1e3;
-Qy = output_cost_coeff * eye(sys.dims.n); 
+%output_cost_coeff = 1e3;
+%Qy = output_cost_coeff * eye(sys.dims.n); 
 % control cost matrix
 input_cost_coeff = 0.001;
-Qu = input_cost_coeff * eye(sys.dims.m);
+Q = input_cost_coeff * eye(sys.dims.m);
 
 % ZPC number of time steps
 maxsteps = 80;
 % time step for plotting 
 timestep_plot = 10;
 
-[uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] =  runZPC( ...
-    sys_d, y0, intc, r_u, r_y, U, N, maxsteps, timestep_plot, Qy, Qu, W, V, AV, M_Sigma);          
-
+[uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] =  runZonoDDSF( ...
+    sys_d, y0, intc, r_u, r_y, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma);          
 
 Cost_model=0;
 for i=1:maxsteps
-    Cost_model_vec(i) = (y_t_model(:,i+1)-r_y)'*Qy*(y_t_model(:,i+1)-r_y)+ (uPred_model(:,i)-r_u)'*Qu*(uPred_model(:,i)-r_u);
+    Cost_model_vec(i) = (uPred_model(:,i) - u_l(:, i))'*Q*(uPred_model(:,i) - u_l(:, i));
     Cost_model = Cost_model + Cost_model_vec(i);
 end
 
 Cost=0;
 for i=1:maxsteps
-    Cost_vec(i) = (y_t(:,i+1)-r_y)'*Qy*(y_t(:,i+1)-r_y)+ (uPred(:,i)-r_u)'*Qu*(uPred(:,i)-r_u);
+    Cost_vec(i) = (uPred(:,i) - u_l(:, i))'*Q *(uPred(:,i) - u_l(:, i));
     Cost = Cost + Cost_vec(i);
 end
-meanZPCtime= mean(execTimeZPC)
-stdZPCtime= std(execTimeZPC)
-meanRMPCtime= mean(execTimeRMPC)
-stdRMPCtime= std(execTimeRMPC)
+meanZPCtime = mean(execTimeZPC)
+stdZPCtime = std(execTimeZPC)
+meanRMPCtime = mean(execTimeRMPC)
+stdRMPCtime = std(execTimeRMPC)
 
 %save the workspace
 %save('workspaces\ZPC');
