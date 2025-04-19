@@ -53,13 +53,11 @@ function [uPred, uPred_model, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
 
         %% ZPC given the model (RMPC-zono)
         [uPred_model(k), YPred_model(:,k+1), execTimeRMPC(k)] = ...
-             solveRMPC(y_t_model(:,k), M_Sigma, N, r_u, r_y, U, Qy, Qu, W, V, AV, intc, p);	    
+             solveRMPC(y_t_model(:,k), M_Sigma, N, r_u, r_y, U, Qy, Qu, W, V, AV, intc, p);	
         
-        %% Apply the optimal control input 
-        w_point = randPoint(W);
-        v_point = randPoint(V);
-        y_t(:,k+1) = sys_d.A * y_t(:,k) + sys_d.B * uPred(k) + w_point +v_point - sys_d.A *v_point;
-        y_t_model(:,k+1) = sys_d.A * y_t_model(:,k) + sys_d.B * uPred_model(k) + w_point +v_point - sys_d.A *v_point;
+        %% Apply the optimal control input
+        [y_t(:,k+1), y_t_model(:,k+1)] = ...
+            sysIter(y_t(:,k), y_t_model(:,k), uPred(k), uPred_model(k), sys_d, W, V);
         
         yt2ref(k) = norm(y_t(:,k)-r_y,2);
         yt2ref_model(k) = norm(y_t_model(:,k)-r_y,2);
