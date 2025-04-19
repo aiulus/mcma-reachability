@@ -1,5 +1,5 @@
 function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
-    solveQPzonoDDSF(R, current_y, sys_d, N, r_u, r_y, U, Qy, Qu, W, V, AV, intc, k, maxsteps, n)
+    solveQPzonoDDSF(R, current_y, sys_d, N, U, Q, W, V, AV, intc, k, maxsteps, n)
     % Inputs match the ZPC planning section in the original function
     % Outputs:
     %   u_opt   - optimal control at step k (scalar)
@@ -18,6 +18,8 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
 
     leftLimit  = cell(1, N);
     rightLimit = cell(1, N);
+
+    r_u = sys.bcs.U.c;
 
     for i = 1:N
         genleni = size(R{i}.generators, 2);   % Original: genleni = size(R{i}.generators,2);

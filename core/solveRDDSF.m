@@ -22,10 +22,12 @@ function [u_opt_model, y_next_model, execTime] = solveRDDSF(current_y_model, M_S
     rand_mode = 'prbs'; constr_scale = 1.25;
     u_l = getRandomInput(sys, N, rand_mode, constr_scale);
 
+    r_u = sys.bcs.U.c;
+
     for i = 1:N
         genleni = size(R{i}.generators, 2);
         %% TODO: get u_l
-        dummy_cen = [R{i}.center; u_l(:, i)];
+        dummy_cen = [R{i}.center; r_u];
         dummy_gen = [R{i}.generators; zeros(1, genleni)];
         card_zono = zonotope(dummy_cen, dummy_gen);
 
