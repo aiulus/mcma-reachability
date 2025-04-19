@@ -125,5 +125,6 @@ meanRMPCtime= mean(execTimeRMPC)
 stdRMPCtime= std(execTimeRMPC)
 
 %save the workspace
+%save('workspaces\ZPC');
 save('zonoDDSF\ddpc\workspaces\ZPC');
 %next run plotPolyZono for plotting

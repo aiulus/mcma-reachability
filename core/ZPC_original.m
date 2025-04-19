@@ -165,6 +165,8 @@ intAB1.inf <= [sys_d.A,sys_d.B]
 rank = rank([Y_0T;U_data])
 
 
+
+
 %% Compute ZPC problem
 %Horizon N for ZPC
 N = 2;

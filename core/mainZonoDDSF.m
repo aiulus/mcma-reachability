@@ -14,7 +14,7 @@
 % See also: ---
 
 % Original Author:       Amr Alanwar, Yvonne Stürz 
-% Adapted by: Aybüke Ulusarslan, Yongkuan Zhang
+% Adapted by:            Aybüke Ulusarslan, Yongkuan Zhang
 % Last update:  ---
 % Last revision:---
 
@@ -38,12 +38,6 @@ n = sys.dims.n;
 initpoints =100; % number of trajectories
 steps =5; % number of steps for each trajectory
 totalsamples = initpoints*steps; %Total number of samples
-
-%% initial set and input
-
-r_u = 8; %reference input
-%% TODO: add error handling for the inverse
-r_y = u2y(r_u, sys); %reference output
 
 %% RETRIEVE BOUNDARY CONDITIONS
 sys = setupBoundaryConditions(sys);
@@ -125,5 +119,6 @@ meanRMPCtime= mean(execTimeRMPC)
 stdRMPCtime= std(execTimeRMPC)
 
 %save the workspace
-save('zonoDDSF\ddpc\workspaces\zDDSF');
+%save('workspaces\ZPC');
+save('zonoDDSF\ddpc\workspaces\zonoDDSF');
 %next run plotPolyZono for plotting
