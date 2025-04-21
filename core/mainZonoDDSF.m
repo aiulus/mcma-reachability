@@ -99,7 +99,7 @@ maxsteps = 80;
 timestep_plot = 10;
 
 [uPred, uPred_model, u_l_hist, y_t, y_t_model, execTimeZPC, execTimeRMPC] =  runZonoDDSF( ...
-    sys, y0, intc, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma);          
+    sys, y0, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma);          
 
 Cost_model=0;
 for i=1:maxsteps

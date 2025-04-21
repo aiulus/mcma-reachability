@@ -1,4 +1,4 @@
-function [u_opt_model, y_next_model, execTime] = solveRDDSF(sys, current_y_model, M_Sigma, N, U, Q, W, V, AV, u_l)
+function [u_opt_model, y_next_model, execTime] = solveRDDSF(sys, current_y_model, M_Sigma, N, U, Q, W, V, AV, u_l, S_f)
     % Inputs correspond to the RMPC block in original function
     % Outputs:
     %   u_opt_model - optimal control at step k
@@ -51,8 +51,16 @@ function [u_opt_model, y_next_model, execTime] = solveRDDSF(sys, current_y_model
             sinf{i} >= zeros(n,1), ...
             ssup{i} >= zeros(n,1), ...
             alpha_u(i) <= 1, ...
-            alpha_u(i) >= -1];
+            alpha_u(i) >= -1];      
     end
+
+    % Enforce terminal constraint R{N+1} ⊆ S_f
+    int_RN = interval(R{N});
+    int_Sf = interval(S_f);
+    
+    Constraints = [Constraints, ...
+        int_RN.inf >= int_Sf.inf, ...
+        int_RN.sup <= int_Sf.sup];
 
     % ---- Cost function ----
     Cost_model = 0;

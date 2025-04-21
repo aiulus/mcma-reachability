@@ -1,3 +1,4 @@
+%% TODO: Refactor into a function that takes in 'baseName' as argument
 clear all
 close all
 

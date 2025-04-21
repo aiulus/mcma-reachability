@@ -1,5 +1,5 @@
 function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
-    solveZDDSF(R, current_y, sys, N, U, Q, W, V, AV, k, maxsteps, u_l)
+    solveZDDSF(R, current_y, sys, N, U, Q, W, V, AV, k, maxsteps, u_l, S_f)
     % Inputs match the ZPC planning section in the original function
     % Outputs:
     %   u_opt   - optimal control at step k (scalar)
@@ -53,6 +53,16 @@ function [u_opt, y_next, u, y, execTime, R, R_plot] = ...
             alpha_u(i) <= 1, ...
             alpha_u(i) >= -1];
     end
+
+    fprintf("------------- Run %d / %d -------------\n", k, maxsteps);
+
+    % Enforce terminal constraint R{N+1} ⊆ S_f
+    int_RN = interval(R{N});
+    int_Sf = interval(S_f);
+    
+    Constraints = [Constraints, ...
+        int_RN.inf >= int_Sf.inf, ...
+        int_RN.sup <= int_Sf.sup];
 
     % ---- Cost function ----
     Cost = 0;

@@ -15,20 +15,17 @@ function sys = setupBoundaryConditions(sys)
             % Output constraints
             y_lb = [-10;2;-10;-10;-10];  
             y_ub = [10;10;10;10;10];     
-            intc = interval(y_lb, y_ub); % CORA interval object
 
             % Initial condition
             y0 = [-2;4;3;-2.5;5.5];      % Placeholder
+            u0 = 8;
 
             % Initial state zonotope
-            initial_state_spread = 25;    % Placeholder
-            X0 = zonotope([y0, initial_state_spread * diag(ones(n,1))]);
+            initial_state_spread = 25;    % Placeholder           
 
-            % Input zonotope
-            initial_u = 8;
             initial_input_spread = 19;           % Placeholder (20 - 1)
-            U = zonotope([initial_u - 1, initial_input_spread]);            
-
+            
+            
         case 'quadrotor'
             % TODO
 
@@ -57,17 +54,26 @@ function sys = setupBoundaryConditions(sys)
             error('assignBoundaryConditions: unknown system type %s', sys_type);
     end
 
+    [X0, U, Y, intc] = applySpreadFactors(initial_state_spread, initial_input_spread, y_lb, y_ub, y0, u0, n);
+
     % Package into struct
     bcs = struct( ...
         'intc', intc, ...
         'y0', y0, ...
         'X0', X0, ...
-        'U', U ...
+        'U', U, ...
+        'Y', Y ...
     );
     sys.bcs = bcs; % Assign bcs to system
     validate_bcs(sys.bcs, sys.dims); % Validate
 end
 
+function [X0, U, Y, intc] = applySpreadFactors(initial_state_spread, initial_input_spread, y_lb, y_ub, y0, u_0, n)
+    intc = interval(y_lb, y_ub); % CORA interval object
+    X0 = zonotope([y0, initial_state_spread * diag(ones(n,1))]);
+    U = zonotope([u_0 - 1, initial_input_spread]);            
+    Y = zonotope(intc);
+end
 
 function validate_bcs(bcs, dims)
 % VALIDATE_BCS Checks the validity of boundary condition definitions

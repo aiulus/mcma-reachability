@@ -1,7 +1,11 @@
 function [uPred, uPred_model, u_l_hist, y_t, y_t_model, execTimeZPC, execTimeRMPC] = ...
-    runZonoDDSF(sys, y0, intc, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma)
+    runZonoDDSF(sys, y0, U, N, maxsteps, timestep_plot, Q, W, V, AV, M_Sigma)
     
     sys_d = sys.discrete;
+
+    Sf_spreadfactor = 20;
+    Sf_numgenerators = 10;
+    S_f = safeTerminalSet(sys, Sf_spreadfactor, Sf_numgenerators);
 
     %% PREALLOCATION STEPS
     p = size(y0,1);
@@ -46,7 +50,7 @@ function [uPred, uPred_model, u_l_hist, y_t, y_t_model, execTimeZPC, execTimeRMP
 
         %% Compute ZPC problem
         [uPred(k), YPred(:,k+1), u, y, execTimeZPC(k), R, Rplotall{k}] = ...
-            solveZDDSF(R, y_t(:,k), sys, N, U, Q, W, V, AV, k, maxsteps, u_l);
+            solveZDDSF(R, y_t(:,k), sys, N, U, Q, W, V, AV, k, maxsteps, u_l, S_f);
 
         %%  Plot
         if timestep_plot == k
@@ -62,7 +66,7 @@ function [uPred, uPred_model, u_l_hist, y_t, y_t_model, execTimeZPC, execTimeRMP
 
         %% ZPC given the model (RMPC-zono)
         [uPred_model(k), YPred_model(:,k+1), execTimeRMPC(k)] = ...
-             solveRDDSF(sys, y_t_model(:,k), M_Sigma, N,  U, Q, W, V, AV, u_l);	
+             solveRDDSF(sys, y_t_model(:,k), M_Sigma, N,  U, Q, W, V, AV, u_l, S_f);	
         
         %% Apply the optimal control input
         [y_t(:,k+1), y_t_model(:,k+1)] = ...
