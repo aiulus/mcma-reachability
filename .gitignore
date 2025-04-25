@@ -1,4 +1,4 @@
 *.png
 *.pdf
 *.asv
-ddpc/outputs
+outputs/
