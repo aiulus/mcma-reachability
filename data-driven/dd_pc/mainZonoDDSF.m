@@ -21,10 +21,9 @@
 %------------- BEGIN CODE --------------
 
 %% INITIAL SETUP
-rand('seed',4500);
-
-clear all
-close all
+rng(4500);
+clearvars;
+close all;
 
 %% SYSTEM SETUP
 systype = 'example0'; % system type
