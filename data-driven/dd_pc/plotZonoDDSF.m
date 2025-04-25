@@ -14,8 +14,8 @@ if ~exist(outputFolder, 'dir')
 end
 
 % Load workspaces
-load(['workspaces\' baseName '.mat']);                 % ZPC workspace
-load(fullfile('workspaces', [baseNamePoly '.mat']));   % Poly workspace 
+load(['zonoDDSF\workspaces\data-driven\pc\' baseName '.mat']);                 % ZPC workspace
+load(fullfile('zonoDDSF\workspaces\data-driven\pc\', [baseNamePoly '.mat']));   % Poly workspace 
 
 
 %load work spaces
