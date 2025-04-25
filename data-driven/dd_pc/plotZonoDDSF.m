@@ -8,15 +8,19 @@ baseName = 'zonoDDSF';
 baseNamePoly = 'poly_W0.01V0.002';
 
 % Define output folder
-outputFolder = fullfile('zonoDDSF', 'workspaces', 'data-driven', 'pc');
-if ~exist(outputFolder, 'dir')
-    mkdir(outputFolder);
+inputFolder = fullfile('zonoDDSF', 'workspaces', 'data-driven', 'pc');
+if ~exist(inputFolder, 'dir')
+    mkdir(inputFolder);
 end
 
 % Load workspaces
 load(['zonoDDSF\workspaces\data-driven\pc\' baseName '.mat']);                 % ZPC workspace
 load(fullfile('zonoDDSF\workspaces\data-driven\pc\', [baseNamePoly '.mat']));   % Poly workspace 
 
+exportFolder = fullfile('zonoDDSF', 'outputs', 'data-driven', 'pc');
+if ~exist(exportFolder, 'dir')
+    mkdir(exportFolder);
+end
 
 %load work spaces
 %load('workspaces\poly')
@@ -33,9 +37,9 @@ load(fullfile('zonoDDSF\workspaces\data-driven\pc\', [baseNamePoly '.mat']));   
 %load('workspaces\poly_W0.1V0.02N2.mat')
 
 % renamed from 'plotReachabilityWithTrajectories'
-%plotTrajectories(Rplotall, y_t, YPred, [1 2], 'zonoDDSF/outputs/plots', 'reach_demo');
+plotTrajectories(Rplotall, y_t, YPred, [1 2], 'zonoDDSF/outputs/plots', 'reach_demo');
 % renamed from 'plotInputFilteringComparison'
-plotUlvsUstar(0:maxsteps-1, u_l_hist, uPred, sys, 'zonoDDSF/outputs/plots', 'input_filtering');
+%plotUlvsUstar(0:maxsteps-1, u_l_hist, uPred, sys, exportFolder, 'input_filtering');
 % renamed from 'plotOutputConstraintCompliance'
 %plotConstraints(0:maxsteps-1, y, yl_hist, sys, 'zonoDDSF/outputs/plots', 'output_compliance');
 % renamed from 'Inclusion'
