@@ -24,125 +24,83 @@
 % 
 % Author:       Amr Alanwar
 % Written:      29-October-2020
+%
+% Adapted by:   Aybüke Ulusarslan
+% Updated:      25-April-2025
 % Last update:  
 % Last revision:---
 
 
 %------------- BEGIN CODE --------------
-
-clear all
-close all
-%addpath('@nonlinearDT')
-rand('seed',1);
-dt =0.015;
-NN=5;
-params.tFinal = dt*NN;
-
-%input set
-params.U = zonotope([[0.01;0.01],diag([0.1;0.2])]);  
-
-%initial set
-params.R0 = zonotope([[-1.9;-20],diag([0.005;0.3])]);
-% dimension of x
-options.dim_x=2;
-
-%Number of trajectories
-initpoints=30;
-%Number of time steps
-steps=20;
-
-%Totoal number of samples
-totalsamples = steps*initpoints;
-
-%noise zonotope
-wfac = 1e-4;
-options.W = zonotope(zeros(options.dim_x,1),wfac*ones(options.dim_x,1)); % disturbance
-
-%noise matrix zonotope
-for i=1:size(options.W.generators,2)
-    vec=options.W.Z(:,i+1);
-    for j=0:totalsamples-1
-        GW{j+i}= [ zeros(options.dim_x,j),vec,zeros(options.dim_x,totalsamples-j-1)];
-    end
-end
-options.Wmatzono= matZonotope(zeros(options.dim_x,totalsamples),GW);
-
-% Reachability Settings 
-
-options.zonotopeOrder = 100;
-options.tensorOrder = 2;
-options.errorOrder = 5;
+rng(1);
+clearvars;
 
 
-% System Dynamics  
-fun = @(x,u) cstrDiscr(x,u,dt);
+%% Initial setup
+% System initialization
+systype = 'cstr';
+dt = 0.015;
+sys = coraSystemsWrapper(systype, dt);
 
-%input random sample points
-for i=1:totalsamples
-    u(:,i) = randPointExtreme(params.U);
-end
+% Centers and spread factors for the zonotopes
+u0 = [0.01;0.01]; Gu0 = diag([0.1;0.2]);
+y0 = [-1.9;-20]; Gy0 = diag([0.005;0.3]);
+w0 = 0; Gw = 1e-4;
 
-%get state trajectories
-x(:,1) = randPoint(params.R0);
-index=1;
-for j=1:options.dim_x:initpoints*options.dim_x
-    x(j:j+options.dim_x-1,1) = randPoint(params.R0);
-    x_free(j:j+options.dim_x-1,1) = x(j:j+options.dim_x-1,1);
-    for i=1:steps
-        x_free(j:j+options.dim_x-1,i+1) = fun(x(j:j+options.dim_x-1,i),u(:,index));
-        x(j:j+options.dim_x-1,i+1) = fun(x(j:j+options.dim_x-1,i),u(:,index)) +randPoint(options.W);
-        index=index+1;
-    end
-end
+% Catchall dictionary
+lookup = struct( ...
+    'sys', sys, ...
+    'dt', dt, ...
+    'NN', 5, ...
+    'initpoints', 30, ...
+    'steps', 20, ...
+    'U', zonotope(u0, Gu0), ... % Input set
+    'R0', zonotope(y0, Gy0), ... % Initial reachable set
+    'W', zonotope(w0*ones(sys.dims.n,1),Gw*ones(sys.dims.n,1)), ... % Measurement noise bound
+    'n', sys.dims.n, ... % Input dimension
+    'fun', sys.fun, ... % System dynamics
+    'zonotopeOrder', 100, ... % Reachability settings 
+    'tensorOrder', 2, ... % Reachability settings 
+    'errorOrder', 5 ... % Reachability settings 
+    );
 
-
-%combine trajectories
-index_0 =1;
-index_1 =1;
-for j=1:options.dim_x:initpoints*options.dim_x
-    for i=2:steps+1        
-        x_meas_vec_1(:,index_1) = x(j:j+options.dim_x-1,i);
-        x_free_vec_1(:,index_1) = x_free(j:j+options.dim_x-1,i);
-        index_1 = index_1 +1;
-    end
-    for i=1:steps
-        x_free_vec_0(:,index_0) = x_free(j:j+options.dim_x-1,i);
-        x_meas_vec_0(:,index_0) = x(j:j+options.dim_x-1,i);
-        index_0 = index_0 +1;
-    end
-end
-
-stepsLip=1;
-initpointsLip=50;
- [gamma,L]= compLipConst(fun,params.U,params.R0,stepsLip,initpointsLip,options.dim_x);
-
- eps(1)= L(1) .* gamma(1)/2;
- eps(2)= L(2) .* gamma(2)/2;
-%options.Zeps = zonotope([zeros(2,1),eps*diag(ones(2,1))]);
-options.Zeps = zonotope([zeros(2,1),diag(eps)]);
-% flag to add Zeps 0 to skip, 1 to add the Zeps
-options.ZepsFlag = 1;
-
-% X_+ is X_1T
-% X_- is X_0T
-options.U_full = u(:,1:totalsamples);
-options.X_0T = x_meas_vec_0(:,1:totalsamples);
-options.X_1T = x_meas_vec_1(:,1:totalsamples);
-
-% define system 
-sysDisc = nonlinearDT('stirredTankReactor',fun,dt,2,2);
+lookup.tFinal = lookup.dt*lookup.NN;
+lookup.totalsamples = lookup.steps*lookup.initpoints; % total #samples
 
 
-% Reachability Analysis ---------------------------------------------------
+Wmatzono= getGW(lookup);
+
+%% Allocate trajectories
+[x_meas_vec_0, x_meas_vec_1, x_free_vec_0, x_free_vec_1, U_full, X_0T, X_1T] = getTrajsNonlinDDRA(lookup);
+lookup.U_full = U_full;
+lookup.X_0T = X_0T;
+lookup.X_1T = X_1T;
+
+%% ?
+stepsLip = 1;
+initpointsLip = 50;
+[gamma,L] = compLipConst(lookup.fun, lookup.U, lookup.R0, stepsLip, initpointsLip, lookup.n);
+eps(1) = L(1) .* gamma(1)/2;
+eps(2) = L(2) .* gamma(2)/2;
+lookup.Zeps = zonotope([zeros(2,1),diag(eps)]);
+lookup.ZepsFlag = 1;
+
+%% Define the discrete system 
+sysDisc = nonlinearDT('stirredTankReactor', @(x,u) cstrDiscr(x,u,dt), dt, sys.dims.n, sys.dims.m);
+
+params.R0 = lookup.R0;
+params.U = lookup.U;
+
+%% Reachability Analysis 
 % compute model based reachability (R) and data driven one (R_data)
 tic
-[R ,R_data]= reach_DT(sysDisc,params,options);
+[R ,R_data]= reach_DT(sysDisc, params, lookup);
 tComp = toc;
 disp("Computation time: " + tComp);
 
-if options.ZepsFlag
+if lookup.ZepsFlag
     for i = 1:NN
-        R_data.timePoint.set{i} = R_data.timePoint.set{i} + options.Zeps;
+        R_data.timePoint.set{i} = R_data.timePoint.set{i} + lookup.Zeps;
     end
 end
 
@@ -152,7 +110,7 @@ end
 figure; hold on; box on;
 
 % plot initial set
-handleX0=plot(params.R0,[1,2],'k-','LineWidth',2);
+handleX0=plot(R0,[1,2],'k-','LineWidth',2);
 
 % plot model based reachable set
 handleModel=plot(R,[1 2],'b','Filled',true,'FaceColor',[.8 .8 .8],'EdgeColor','b');

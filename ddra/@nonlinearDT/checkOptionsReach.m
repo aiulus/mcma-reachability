@@ -38,10 +38,12 @@ end
 
 % DEFAULT OPTIONS ---------------------------------------------------------
 
+%% Unrecognized function or variable for this whole block!! 
 options = check_tStart_tFinal(obj, options, checkName);
 options = check_reductionTechnique(options, obj);
 options = check_verbose(options, obj);
 check_lagrangeRem(options, obj);
+%%
 
 t = options.tStart:obj.dt:options.tFinal;
 if t(end) ~= options.tFinal

@@ -30,7 +30,8 @@ function [R ,R_data]= reach_DT(obj,params,options,varargin)
 
     % options preprocessing
     options = params2options(params,options);
-    options = checkOptionsReach(obj,options,0);
+    
+    %options = checkOptionsReach(obj,options,0);
     
     spec = [];
     if nargin >= 4

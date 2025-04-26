@@ -67,7 +67,7 @@ methods
             dt = varargin{2};
             states = varargin{3};
             inputs = varargin{4};
-        elseif nargin == 5
+        elseif nargin == 5 
             name = varargin{1};
             fun = varargin{2};
             dt = varargin{3};
