@@ -1,14 +1,14 @@
 function Wmatzono = getGW(lookup)
     W = lookup.W;
     totalsamples = lookup.totalsamples; 
-    n = lookup.n;
+    n = lookup.sys.dims.n;
 
-    g = size(W.generators,2);  % number of generators
+    g = size(W.G,2);  % number of generators
     GW = cell(1, g * totalsamples);  % preallocate the cell array
     
     index = 1;
     for i = 1:g
-        vec = W.Z(:,i+1);
+        vec = W.G(:,i);
         for j = 0:totalsamples-1
             GW{index} = [zeros(n,j), vec, zeros(n,totalsamples-j-1)];
             index = index + 1;
