@@ -22,7 +22,7 @@ function Z_size = getReachsetSize(Z, method)
         else
             warning(['Squared generator matrix not full-rank! ' ...
                 'Volume potentially underestimated.']);
-            Z_size = sqrt(det(GG + 1e-6 * eye(Z_size(GG))));
+            Z_size = sqrt(det(GG + 1e-6 * eye(size(GG))));
         end
 
         case 'bbox_volume'
