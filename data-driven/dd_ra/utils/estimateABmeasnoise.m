@@ -1,6 +1,6 @@
 function [AB_av, AB_cmz] = estimateABmeasnoise(U_full, X_0T, X_1T, lookup)
     %% Parameter extraction
-    n = lookup.sys.dims.m;
+    n = lookup.sys.dims.n;
     Wmatzono = lookup.Wmatzono; 
     Vmatzono = lookup.Vmatzono;
     AVmatzono = lookup.AVmatzono;
@@ -17,15 +17,17 @@ function [AB_av, AB_cmz] = estimateABmeasnoise(U_full, X_0T, X_1T, lookup)
     Acon = cell(1, g);
 
     for i=1:length(mink.generator)
-        Acon{i}=(mink.generator{i})*basis;
+        Acon{i}=mink.G(:, :, i)*basis;
+        %Acon{i} = (mink.generator{i})*basis;
     end
 
     Bcon = (X_1T - zeros(n, totalsamples))*basis  ;
     
     % AB with AV assumption (tildeMsigma)
     AB_av = (X_1T + -1*Wmatzono + -1* Vmatzono + AVmatzono)*pinv([X_0T; U_full]);    
-    
+    %properties(AB_av)
+
     % constrained matrix zonotope AB with AV assumption (tildeNsigma)
-    AB_cmz = conMatZonotope(AB_av.c, AB_av.G, Acon,Bcon);
+    AB_cmz = conMatZonotope(AB_av.C, AB_av.G, Acon, Bcon);
 end
 

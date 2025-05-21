@@ -1,4 +1,4 @@
-function [U_full, X_0T, X_1T, X_0T_pure] = getTrajsMeasnoiseDDRA(lookup)
+function [U_full, X_0T, X_1T, X_0T_pure] = getTrajsMeasnoiseDDRA(lookup, plot_toggle)
     %% Extract relevant parameters
     X0 = lookup.X0; U = lookup.U; W = lookup.W; V = lookup.V;
     n = lookup.sys.dims.n; m = lookup.sys.dims.m;
@@ -22,7 +22,7 @@ function [U_full, X_0T, X_1T, X_0T_pure] = getTrajsMeasnoiseDDRA(lookup)
     end
     
     % simulate the discrete system starting from random initial points
-    x(:,1) = randPoint(X0);
+    %x(:,1) = randPoint(X0);
     index=1;
     for j=1:n:initpoints*n
         x(j:j+n-1,1) = randPoint(X0);
@@ -54,5 +54,13 @@ function [U_full, X_0T, X_1T, X_0T_pure] = getTrajsMeasnoiseDDRA(lookup)
     X_0T = x_meas_vec_0_v(:,1:totalsamples);
     X_1T = x_meas_vec_1_v(:,1:totalsamples);
     X_0T_pure = x_meas_vec_0(:,1:totalsamples);
+
+    if plot_toggle == 1
+        %% Plot trajectories
+        figure;
+        subplot(1,2,1); hold on; box on; plot(x(1,:),x(2,:),'b'); xlabel('x_1'); ylabel('x_2');
+        subplot(1,2,2); hold on; box on; plot(x(3,:),x(4,:),'b'); xlabel('x_3'); ylabel('x_4');
+        close;
+    end
 end
 

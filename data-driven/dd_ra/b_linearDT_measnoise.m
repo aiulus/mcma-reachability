@@ -65,26 +65,22 @@ lookup.Vmatzono = getGV(lookup);
 lookup.AVmatzono = sys_d.A * lookup.Vmatzono;
 
 %% Simulate & get trajectories
-[U_full, X_0T, X_1T, X_0T_pure] = getTrajsMeasnoiseDDRA(lookup);
 plot_toggle = 1;
-[AB_av, AB_cmz] = estimateABmeasnoise(U_full, X_0T, X_1T, lookup, plot_toggle);
+[U_full, X_0T, X_1T, X_0T_pure] = getTrajsMeasnoiseDDRA(lookup, plot_toggle);
 
-%% Plot trajectories
-figure;
-subplot(1,2,1); hold on; box on; plot(x(1,:),x(2,:),'b'); xlabel('x_1'); ylabel('x_2');
-subplot(1,2,2); hold on; box on; plot(x(3,:),x(4,:),'b'); xlabel('x_3'); ylabel('x_4');
-close;
+[AB_av, AB_cmz] = estimateABmeasnoise(U_full, X_0T, X_1T, lookup);
+
 
 % ------------------------ Refactor ------------------------
-[AB, AV_oneterm] = estimate_AB_no_AV(X_1T, X_0T, U_full, Wmatzono, Vmatzono, W, V);
+[AB, AV_oneterm] = estimate_AB_no_AV(X_1T, X_0T, U_full, lookup.Wmatzono, lookup.Vmatzono, lookup.W, lookup.V);
 
 % Verify true AB inside set
-AV_minus = check_true_AB_within(X_1T, AB, X_0T, U_full, Wmatzono, Vmatzono, sys_d, X_0T_pure);
+AV_minus = check_true_AB_within(X_1T, AB, X_0T, U_full, lookup.Wmatzono, lookup.Vmatzono, sys_d, X_0T_pure);
 
 % Compute reachable sets
 totalsteps = 3;
 redOrder = 390;
-[X_model, X_data, X_data_av, X_data_cmz] = compute_next_sets(X0, U, W, V, sys_d, ...
+[X_model, X_data, X_data_av, X_data_cmz] = compute_next_sets(lookup.X0, lookup.U, lookup.W, lookup.V, sys_d, ...
     AB, AB_av, AB_cmz, AV_oneterm, totalsteps, redOrder);
 
 % Visualization
@@ -115,10 +111,12 @@ function AV_minus = check_true_AB_within(X_1T, AB, X_0T, U_full, Wmatzono, Vmatz
     disp('Lower bounds check:'), disp(all(intAB.inf <= [sys_d.A, sys_d.B], 'all'))
     
     VInt = intervalMatrix(AV_minus_matzono);
-    leftLimit = VInt.Inf;
-    rightLimit = VInt.Sup;
+    %properties(VInt);
+    leftLimit = infimum(VInt);
+    rightLimit = supremum(VInt);
     AV_minus = zonotope(interval(min(leftLimit')', max(rightLimit')'));
 end
+
 
 function [X_model, X_data, X_data_av, X_data_cmz] = compute_next_sets(X0, U, W, V, sys_d, ...
     AB, AB_av, AB_cmz, AV_oneterm, totalsteps, redOrder)

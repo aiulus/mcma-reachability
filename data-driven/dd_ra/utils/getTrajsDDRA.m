@@ -1,4 +1,4 @@
-function [u_mean_vec_0, x_meas_vec_0, x_meas_vec_1, U_full, X_0T, X_1T] = ...
+function [U_full, X_0T, X_1T] = ...
     getTrajsDDRA(sys, initpoints, steps, x, utraj, plot_toggle)
 
     n = sys.dims.n; m = sys.dims.m;
@@ -28,7 +28,11 @@ function [u_mean_vec_0, x_meas_vec_0, x_meas_vec_1, U_full, X_0T, X_1T] = ...
     U_full = u_mean_vec_0(:,1:totalsamples); %same as u 
     X_0T = x_meas_vec_0(:,1:totalsamples);
     X_1T = x_meas_vec_1(:,1:totalsamples);
-        
+    
+    %% Debug statement
+    plot_toggle = 0;
+    %%
+    
     if plot_toggle
         figure;
         subplot(1,2,1); hold on; box on; plot(x(1,:),x(2,:),'b'); xlabel('x_1'); ylabel('x_2');
