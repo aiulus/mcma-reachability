@@ -1,4 +1,4 @@
-function sys = systemsZonoDDSF(sys_type, dt)
+function sys = systemsZonoDDSF(sys_type, dt, dim)
 % SYSTEMSZONODDSF 
 % - takes in a string, returns both continuous and discrete-time system matrices 
 % - main responsibility: defining various well-known, well-studied systems
@@ -24,7 +24,18 @@ function sys = systemsZonoDDSF(sys_type, dt)
 %
 %   See also: c2d
 
+    if nargin < 3 && strcmpi(sys_type,'chain_of_integrators')
+        error('Target system dimension must be specified for systype <chain of integrators>!');
+    end
+
     switch lower(sys_type)
+        case 'chain_of_integrators'
+            n = dim;
+            A = diag(ones(n-1, 1), 1);
+            B = zeros(n, 1); B(end) = 1;
+            C = eye(n);
+            D = zeros(n, 1);
+
         case 'example0'
             A = [-1 -4 0 0 0; 4 -1 0 0 0; 0 0 -3 1 0; 0 0 -1 -3 0; 0 0 0 0 -2];
             B = ones(5,1);

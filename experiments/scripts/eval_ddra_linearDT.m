@@ -3,7 +3,7 @@ clear; clc;
 %% Define experiment settings
 system_type = 'chain_of_integrators';
 dim_list = 2:2:10; % System dimensions
-noise_scales = [0.0, 0.1, 0.5, 1.0]; % Noise scaling factors
+noise_scales = [0.0, 0.1, 0.5, 1.0, 1.5, 2]; % Noise scaling factors
 measure_type = 'volume'; % Or: 'bbox_volume', 'fro_norm'
 plot_toggle = true;
 

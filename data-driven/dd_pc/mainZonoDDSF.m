@@ -93,7 +93,7 @@ input_cost_coeff = 0.001;
 Q = input_cost_coeff * eye(sys.dims.m);
 
 % ZPC number of time steps
-maxsteps = 80;
+maxsteps = 20;
 % time step for plotting 
 timestep_plot = 10;
 
@@ -124,3 +124,4 @@ if ~exist(outputFolder, 'dir')
 end
 save('zonoDDSF\workspaces\data-driven\pc\zonoDDSF');
 %next run plotPolyZono/plotZonoDDSF for plotting
+plotPolyZono;

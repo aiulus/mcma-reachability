@@ -11,6 +11,16 @@ function sys = setupBoundaryConditions(sys)
     m = dims.m;
 
     switch sys_type
+        case 'chain_of_integrators'
+            % TODO / all placeholders
+            y_lb = -100 * ones(n, 1);
+            y_ub = 100 * ones(n, 1);
+
+            y0 = zeros(n, 1);
+            u0 = 0;
+
+            initial_state_spread = 1;    
+            initial_input_spread = 1;          
         case 'example0'
             % Output constraints
             y_lb = [-10;2;-10;-10;-10];  
