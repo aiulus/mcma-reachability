@@ -80,7 +80,9 @@ function out = func_zonoDDSF(systype, dim, scale_noise, plot_toggle)
     Q = input_cost_coeff * eye(sys.dims.m);
     
     % ZPC number of time steps
-    maxsteps = 10;
+    %% Temporary debugging change
+    %maxsteps = 80;
+    maxsteps = 3;
     % time step for plotting 
     timestep_plot = 10;
     

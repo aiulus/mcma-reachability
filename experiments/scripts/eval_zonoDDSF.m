@@ -1,9 +1,14 @@
 clear; clc;
+warning('off'); % Disabling warnings to avoid overwhelming the command 
+                % window with CORA depreciation warnings --
+                % TODO: Take care of the outdated usages causing them
 
 %% Define experiment settings
 systype = 'chain_of_integrators';
-dim_list = 2:2:10;
-noise_scales = [0.0, 0.1, 0.5, 1.0, 1.5, 2];
+%dim_list = 2:2:10;
+%noise_scales = [0.0, 0.1, 0.5, 1.0, 1.5, 2];
+dim_list = [1, 5, 10];
+noise_scales = [0.0, 1.0, 2];
 plot_toggle = true;
 
 results = struct();
@@ -39,7 +44,7 @@ for i = 1:length(noise_scales)
         hold on;
     end
     xlabel('System Dimension'); ylabel('Computation Time [s]');
-    title(sprintf('ZPC-DDSF Runtime (Process Noise = %.2f)', measurement_noise_scales(i)));
+    title(sprintf('ZPC-DDSF Runtime (Process Noise = %.2f)', noise_scales(i)));
     legend; grid on;
 end
 
@@ -67,3 +72,4 @@ for i = 1:length(noise_scales)
     title(sprintf('ZPC Conservatism (Proc. Noise = %.2f)', noise_scales(i)));
     legend; grid on;
 end
+warning('on');
