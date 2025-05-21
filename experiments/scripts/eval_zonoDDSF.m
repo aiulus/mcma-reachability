@@ -65,7 +65,7 @@ end
 for i = 1:length(noise_scales)
     figure;
     for j = 1:length(noise_scales)
-        plot(dim_list, results.conserv(:, i, i), '-*', 'DisplayName', sprintf('Mes. %.2f',noise_scales(j)));
+        plot(dim_list, results.conservatism(:, i, i), '-*', 'DisplayName', sprintf('Mes. %.2f',noise_scales(j)));
         hold on;
     end
     xlabel('System Dimension'); ylabel('Conservatism');
