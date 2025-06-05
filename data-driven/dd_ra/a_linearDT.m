@@ -48,11 +48,11 @@ W_center = 0; W_spread = 0.005;
 
 %% Get the trajectories
 plot_toggle = 1;
-[u_mean_vec_0, x_meas_vec_0, x_meas_vec_1, U_full, X_0T, X_1T] = ...
+[U_full, X_0T, X_1T] = ...
     getTrajsDDRA(sys, initpoints, steps, x, utraj, plot_toggle);
 
 %% Estimate M_ab
-[M_ab, intAB1] = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, Wmatzono);
+M_ab = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, Wmatzono);
 
 
 %% compute next step sets from model / data

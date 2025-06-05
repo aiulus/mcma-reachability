@@ -26,16 +26,16 @@ clearvars;
 close all;
 
 %% SYSTEM SETUP
-systype = 'example0'; % system type
+systype = 'chain_of_integrators'; % system type
 dt = 0.05; % sampling time
-sys = systemsZonoDDSF(systype, dt);
+sys = systemsZonoDDSF(systype, dt, 7);
 sys_c = sys.cont;
 sys_d = sys.discrete;
 n = sys.dims.n;
 
 %% SIMULATION SETUP
-initpoints =100; % number of trajectories
-steps =5; % number of steps for each trajectory
+initpoints = 10; % number of trajectories
+steps = 5; % number of steps for each trajectory
 totalsamples = initpoints*steps; %Total number of samples
 
 %% RETRIEVE BOUNDARY CONDITIONS
