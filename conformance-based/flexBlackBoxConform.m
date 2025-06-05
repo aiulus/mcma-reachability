@@ -51,75 +51,75 @@ function completed = flexBlackBoxConform
     for i = 1:length(methodsGray)
         type = methodsGray(i);
         fprintf("Identification with method %s \n", type);
+
         tic;
         [configs{i+1}.params, results] = conform(sys, params_id_init, options, type);
         Ts = toc;
-        configs{i+1}.sys = results.sys;
-        configs{i+1}.options = options_reach;
-        configs{i+1}.name = type;
+
+        configs{i+1} = struct( ...
+            'sys', results.sys, ...
+            'options', options_reach, ...
+            'name', type ...
+            );
         
         fprintf("Identification time: %.4f\n", Ts);
     end
 
     %% Validation and Visualization -------------------------------------------
-    validateRechableSetsIdent(params_true, methodsGray, configs, settings.n_k_val);  
+
+    % Sanity check: Compute Reachable Sets and Check Containment of the 
+    % Identification Test Cases    
+    validateReachableSets(params_true.testSuite, configs, settings.n_k_val, ...
+        ["true" methodsGray], 'label', 'IDENTIFICATION DATA', 'require_full_containment', true);
+
 
     % Create Validation Data
     params_true.tFinal = sys.dt * settings.n_k_val - sys.dt;
     testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, ...
         settings.n_s_val, options_testS);
 
-    validateReachableSetsVal(testSuite_val, configs, settings.n_k_val, plot_settings, methods);   
-
+    % Compute Reachable Sets and Check Containment of the Validation Test Cases
+    validateReachableSets(testSuite_val, configs, settings.n_k_val, ...
+        methods, 'plot_settings', plot_settings, 'label', 'VALIDATION DATA');
     
     % example completed
     completed = true;
 end
 
-function validateReachableSetsVal(testSuite_val, configs, n_k_val, plot_settings, methods)
-    % Compute Reachable Sets and Check Containment of the Validation Test Cases
-    num_out = 0;
-    num_in = 0;
-    check_contain = 1;
-    for m=1:length(testSuite_val)
-        [~, eval] = validateReach(testSuite_val{m}, configs, check_contain, plot_settings);
-        num_out = num_out + eval.num_out;
-        num_in = num_in + eval.num_in;
-    end
-    num_all = length(testSuite_val)*n_k_val*size(testSuite_val{1}.y,3);
-    fprintf("VALIDATION DATA: \n");
-    for i = 1:length(configs)
-        p_contained = 100-(num_out(i)/(num_out(i)+num_in(i)))*100;
-        fprintf("%s: %.2f%% of the samples are contained in the reachable " + ...
-            "set. \n", ...
-            methods(i), p_contained);
-        fprintf("%s: %.2f%% of the samples were not valid. \n", ...
-            methods(i), (num_all -(num_out(i)+num_in(i)))/num_all*100);
-    end
-end
+function validateReachableSets(testSuite, configs, n_k_val, methods, varargin)
+    % Parse optional inputs
+    p = inputParser;
+    addOptional(p, 'plot_settings', []);
+    addOptional(p, 'label', 'VALIDATION DATA');
+    addOptional(p, 'require_full_containment', false);
+    parse(p, varargin{:});
+    plot_settings = p.Results.plot_settings;
+    label = p.Results.label;
+    require_full_containment = p.Results.require_full_containment;
 
-function validateRechableSetsIdent(params_true, methodsGray, configs, n_k_val)
-    % Sanity check: Compute Reachable Sets and Check Containment of the 
-    % Identification Test Cases
     num_out = 0;
     num_in = 0;
     check_contain = 1;
-    methods = ["true" methodsGray];
-    for m=1:length(params_true.testSuite)
-        [~, eval] = validateReach(params_true.testSuite{m}, configs, check_contain);
+
+    for m = 1:length(testSuite)
+        if isempty(plot_settings)
+            [~, eval] = validateReach(testSuite{m}, configs, check_contain);
+        else
+            [~, eval] = validateReach(testSuite{m}, configs, check_contain, plot_settings);
+        end
         num_out = num_out + eval.num_out;
         num_in = num_in + eval.num_in;
     end
-    num_all = length(params_true.testSuite)*n_k_val*size(params_true.testSuite{1}.y, 3);
-    fprintf("IDENTIFICATION DATA: \n");
+
+    num_all = length(testSuite) * n_k_val * size(testSuite{1}.y, 3);
+    fprintf("%s: \n", label);
     for i = 1:length(configs)
-        p_contained = 100-(num_out(i)/(num_out(i)+num_in(i)))*100;
-        fprintf("%s: %.2f%% of the samples are contained in the reachable " + ...
-            "set (must be 100%%!). \n", ...
-            methods(i), p_contained);
-        fprintf("%s: %.2f%% of the samples were not valid (measurement " + ...
-            "was nan or reachable set could not be computed). \n", ...
-            methods(i), (num_all -(num_out(i)+num_in(i)))/num_all*100);
+        p_contained = 100 - (num_out(i)/(num_out(i)+num_in(i))) * 100;
+        suffix = require_full_containment * " (must be 100%!)";
+        fprintf("%s: %.2f%% of the samples are contained in the reachable set%s. \n", ...
+            methods(i), p_contained, suffix);
+        fprintf("%s: %.2f%% of the samples were not valid. \n", ...
+            methods(i), (num_all - (num_out(i) + num_in(i))) / num_all * 100);
     end
 end
 
@@ -174,8 +174,6 @@ function config = getConfig()
     % Plotting
     config.plot_settings.plot_Yp = false;
     config.plot_settings.dims = [1 2];
-
-    % Get 
 end
 
 
