@@ -1,0 +1,27 @@
+{
+  "settings": {
+    "n_m": 2,
+    "n_s": 50,
+    "n_k": 4,
+    "n_m_train": 100,
+    "n_s_train": 10,
+    "n_k_train": 4,
+    "n_m_val": 5,
+    "n_s_val": 10,
+    "n_k_val": 4
+  },
+  "options_reach": {
+    "zonotopeOrder": 100,
+    "tensorOrder": 2,
+    "errorOrder": 1,
+    "tensorOrderOutput": 2,
+    "verbose": false
+  },
+  "options_testS": {
+    "p_extr": 0.3
+  },
+  "plot_settings": {
+    "plot_Yp": false,
+    "dims": [1, 2]
+  }
+}

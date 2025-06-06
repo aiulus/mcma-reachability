@@ -1,15 +1,80 @@
-function completed = flexBlackBoxConform
+function completed = flexBlackBoxConform(varargin)
+% --------------------------------------------------------------------
+    % HOW TO USE flexBlackBoxConform:
+    %
+    %   flexBlackBoxConform()
+    %     – Uses all default settings:
+    %         • dynamics           = "Square"
+    %         • plot_settings      = config.plot_settings from getConfig()
+    %         • cost_norm          = "interval"
+    %         • constraints        = "half"
+    %         • identification     = ["blackGP","blackCGP"] + "true"
+    %         • reachability opts  = config.options_reach from getConfig()
+    %         • test‐suite params  = config.options_testS.p_extr = 0.3
+    %
+    %   flexBlackBoxConform('dynamics', DYN_NAME)
+    %     – Override the system dynamics. DYN_NAME must be a valid input
+    %       to loadDynamics (e.g. "VanDerPol", "Square", etc.).
+    %
+    %   flexBlackBoxConform('plot_settings', PLOT_STRUCT)
+    %     – Override the default plotting settings. PLOT_STRUCT should have
+    %       the same fields as returned by getConfig().plot_settings, namely:
+    %         .plot_Yp  (logical, default=false)
+    %         .dims     (1×2 vector, default=[1 2])
+    %       If you omit this name-value pair, plot_settings is taken from
+    %       getConfig().plot_settings.
+    %
+    %   flexBlackBoxConform('dynamics', DYN_NAME, 'plot_settings', PLOT_STRUCT)
+    %     – Override both at once. Name-value pairs can appear in any order.
+    %
+    % IMPORTANT DEFAULTS (defined in getConfig()):
+    %   • settings.n_m         = 2
+    %   • settings.n_s         = 50
+    %   • settings.n_k         = 4
+    %   • settings.n_m_train   = 100
+    %   • settings.n_s_train   = 10
+    %   • settings.n_k_train   = 4
+    %   • settings.n_m_val     = 5
+    %   • settings.n_s_val     = 10
+    %   • settings.n_k_val     = 4
+    %   • options_reach.zonotopeOrder     = 100
+    %   • options_reach.tensorOrder       = 2
+    %   • options_reach.errorOrder        = 1
+    %   • options_reach.tensorOrderOutput = 2
+    %   • options_reach.verbose           = false
+    %   • config.options_testS.p_extr      = 0.3
+    %   • config.plot_settings.plot_Yp     = false
+    %   • config.plot_settings.dims        = [1 2]
+    %   • cost_norm  = "interval"
+    %   • constraints = "half"
+    %
+    % To change any of the “non‐varargin” defaults (e.g. cost_norm, constraints,
+    % or the numbers of trajectories), edit getConfig() or the hard-coded lines
+    % inside this function directly.
+    % --------------------------------------------------------------------
     rng(2)
     
-    dynamics = "Square"; % sytem dynamics: "NARX","NARX2"    
+    % Parse optional arguments
+    p = inputParser;
+    addParameter(p, 'plot_settings', []);
+    addParameter(p, 'dynamics', "Square");
+    parse(p, varargin{:});
 
-    % Get the default configuration
+    override_plot_settings = p.Results.plot_settings;
+    dynamics = p.Results.dynamics;
+
+    %% Load default config
     config = getConfig();
-
-    settings = config.settings;    
+    settings = config.settings;
     options_reach = config.options_reach;
     options_testS.p_extr = 0.3;
-    plot_settings = config.plot_settings;
+
+    % Use default unless override is provided
+    if isempty(override_plot_settings)
+        plot_settings = config.plot_settings;
+    else
+        plot_settings = override_plot_settings;
+    end
     
     cost_norm = "interval"; % norm for the reachable set: "interval","frob"    
     
@@ -33,11 +98,11 @@ function completed = flexBlackBoxConform
 
     % Create struct for saving the identification results for each system
     %% TODO: rename to 'results'
-    configs = cell(length(methodsGray)+1, 1);
-    configs{1}.sys = sys;
-    configs{1}.params = rmfield(params_true, 'testSuite');
-    configs{1}.options = options_reach;
-    configs{1}.name = "true";
+    results = cell(length(methodsGray)+1, 1);
+    results{1}.sys = sys;
+    results{1}.params = rmfield(params_true, 'testSuite');
+    results{1}.options = options_reach;
+    results{1}.name = "true";
 
     % Initial Estimates of the Disturbance Sets
     c_R0 = center(params_true.R0);
@@ -53,10 +118,10 @@ function completed = flexBlackBoxConform
         fprintf("Identification with method %s \n", type);
 
         tic;
-        [configs{i+1}.params, results] = conform(sys, params_id_init, options, type);
+        [results{i+1}.params, results] = conform(sys, params_id_init, options, type);
         Ts = toc;
 
-        configs{i+1} = struct( ...
+        results{i+1} = struct( ...
             'sys', results.sys, ...
             'options', options_reach, ...
             'name', type ...
@@ -69,7 +134,7 @@ function completed = flexBlackBoxConform
 
     % Sanity check: Compute Reachable Sets and Check Containment of the 
     % Identification Test Cases    
-    validateReachableSets(params_true.testSuite, configs, settings.n_k_val, ...
+    validateReachableSets(params_true.testSuite, results, settings.n_k_val, ...
         ["true" methodsGray], 'label', 'IDENTIFICATION DATA', 'require_full_containment', true);
 
 
@@ -79,7 +144,7 @@ function completed = flexBlackBoxConform
         settings.n_s_val, options_testS);
 
     % Compute Reachable Sets and Check Containment of the Validation Test Cases
-    validateReachableSets(testSuite_val, configs, settings.n_k_val, ...
+    validateReachableSets(testSuite_val, results, settings.n_k_val, ...
         methods, 'plot_settings', plot_settings, 'label', 'VALIDATION DATA');
     
     % example completed
