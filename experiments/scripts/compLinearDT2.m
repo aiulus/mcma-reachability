@@ -18,8 +18,8 @@
 clear; clc;
 
 %% 0 - Specify system & data parameters
-systype = 'chain_of_integrators';
-%systype = 'Square';
+%systype = 'chain_of_integrators';
+systype = 'Square';
 dim = 4;
 dt = 0.05;
 
@@ -31,7 +31,13 @@ plot_toggle = struct('ddra', 0, 'cc', 0);
 rng(2);
 
 %% 1 - Simulate the system / generate the datasets
-sys = systemsDDRA(systype, dt, dim);
+[sys, params_true.R0, params_true.U, p_true] = custom_loadDynamics(systype, "rand", dim);
+cfg = getConfig();
+settings = cfg.settings;
+n_k_total = settings.n_k + settings.n_k_train + settings.n_k_val;
+n_m_total = settings.n_m + settings.n_m_train + settings.n_m_val;
+n_s_total = settings.n_s + settings.n_s_train + settings.n_s_val;
+testSuite = createTestSuite(sys, params_true, n_k_total, n_m_total, n_s_total, cfg.options_testS);
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; W = []; WmatZ = [];
@@ -42,12 +48,13 @@ X0_set = []; U_set = []; W = []; WmatZ = [];
                                        0*ones(dim,1), 0.005*eye(dim));  % W_center & W_spread
 
 % Simulate the system dynamics with random samples from X0 and W
-[x_all, utraj_all] = getDataDDRA(sys, initpoints, T, X0, U, W);
+%[x_all, utraj_all] = getDataDDRA(sys, initpoints, T, X0, U, W);
 
 % Create the datasets
-[data, testSuites] = createDataSet(sys, initpoints, T, x_all, utraj_all);
+%[data, testSuites] = createDataSet(sys, initpoints, T, x_all, utraj_all);
 
 %% 2 - Run the DDRA pipeline
+[x_all, utraj_all] = convertDynamicsData(testSuite, sys);
 [U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all, false);
 M_ab = estimateAB_ddra(sys.discrete, X_0T, X_1T, U_full, Wmatzono);
 totalsteps = 10; % #(identification steps after identification)
@@ -62,4 +69,6 @@ if plot_toggle.ddra
 end
 
 %% 3 - Run the Conformance Checking pipeline
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', dim);
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', dim);
+%% Data-passing temporarily disabled
+[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', dim);

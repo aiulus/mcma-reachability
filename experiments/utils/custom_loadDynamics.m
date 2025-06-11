@@ -1,20 +1,78 @@
-function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, p, unc_scaling)
-% ADAPTED FROM:
-% CORA\global\functions\helper\dynamics\confIdentification\loadDynamics.m
+function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, p)
+% loadDynamics - load system dynamics and uncertainty sets
+%
+% Syntax:
+%    [sys, R0, U] = loadDynamics(dynamics)
+%
+% Inputs:
+%    dynamics - string specifying the dynamical system
+%    type - string "standard" (default) for the normal uncertainty sets or
+%               "diag" for diagonal generator matrices with random elements
+%               "rand" for non-diagonal generator matrices
+%    p - [optional] model parameters 
+%
+% Outputs:
+%    sys - dynamical system
+%    R0 - default initial state set
+%    U - default input set
+%    p_true - true model parameters
+%
+% References:
+%   [1] L. Luetzow, M. Althoff, "Reachability analysis of ARMAX models," in 
+%       Proc. of the 62nd IEEE Conference on Decision and Control, pp. 
+%       7021–7028, 2023.
+%   [2] E. N. Lorenz, “Deterministic nonperiodic flow,” Journal of
+%       Atmospheric Sciences, vol. 20, no. 2, pp. 130 – 141, 1963.
+%   [3] A. Kroll and H. Schulte, “Benchmark problems for nonlinear system
+%       identification and control using soft computing methods: Need and
+%       overview," Applied Soft Computing, vol. 25, pp. 496–513, 2014.
+%   [4] J. M. Bravo. "Robust MPC of constrained discrete-time nonlinear 
+%       systems based on approximated reachable sets", Automatica, 2006.
+%   [5] M. Althoff et al. "Reachability analysis of nonlinear systems with 
+%       uncertain parameters using conservative linearization", in Proc. 
+%       of the 62nd IEEE Conference on Decision and Control, pp.
+%       4042-4048, 2008.
+%
+% Other m-files required: none
+% Subfunctions: none
+% MAT-files required: none
+%
+% See also: testCase
+
+% Authors:       Laura Luetzow
+% Written:       01-March-2024
+% Last update:   ---
+% Last revision: ---
+%
+% Adapted by:                       Aybüke Ulusarslan
+% Adaptation last updated on:       11-June-2025
 
 % ------------------------------ BEGIN CODE -------------------------------
 
 if nargin == 1
     type = "standard";
 end
-if nargin < 3
-    p = [];
-end
-if nargin < 4
-    unc_scaling = 1.0;
-end
 
 switch dynamics
+    case "chain_of_integrators"
+    % Chain-of-integrators linear discrete-time model
+    % We take `dim` from the third argument `p`
+    n  = p;  
+    A  = diag(ones(n-1,1),1);
+    B  = zeros(n,1); B(end)=1;
+    C  = eye(n);
+    D  = zeros(n,1);
+    dt = 0.05;  % or whatever sampling time you want
+    %sys = linearSysDT(A,B,[],C,D,dt);
+
+    % Wrap into cell arrays for linearARX()
+    A_bar = { A };
+    B_bar = { B };
+    sys = linearARX(A_bar, B_bar, dt);
+    R0     = zonotope(zeros(n,1), eye(n));
+    U      = zonotope(zeros(1,1), 1);
+    p_true = n;
+    
     case "pedestrian"
         % pedestrian model as a state-space model [1]
         p_true = [1 0.01 5e-5 0.01]';
@@ -69,12 +127,6 @@ switch dynamics
                 c_V =  -0.05+zeros(dim_v,1);
                 G_V = 0.1*[diag(ones(dim_v,1)) ones(dim_v,1)];
         end
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
         R0 = zonotope([c_R0,G_R0]);
         V = zonotope([c_V,G_V]);
         U = cartProd(zonotope([c_U,G_U]), V);
@@ -121,11 +173,6 @@ switch dynamics
                 c_V =  -0.05+zeros(dim_v,1);
                 G_V = 0.1*[diag(ones(dim_v,1)) ones(dim_v,1)];
         end
-        
-        % Apply uncertainty scaling
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
         R0 = zonotope(zeros(dim_x,1));
         V = zonotope([c_V,G_V]);
         U = cartProd(zonotope([c_U,G_U]), V);            
@@ -165,11 +212,6 @@ switch dynamics
                 G_U =  diag([0.1;2;0.2]);
                 G_R0 = 0.2*eye(dim_x);
         end
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-
         R0 = zonotope([c_R0,G_R0]);
         W = zonotope([c_U,G_U]);
         V = zonotope([]);
@@ -208,11 +250,6 @@ switch dynamics
                 G_U =  diag([0.1;2]);
                 G_R0 = 0.2*eye(dim_x);
         end
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-
         R0 = zonotope([c_R0,G_R0]);
         W = zonotope([c_U,G_U]);
         V = zonotope([]);
@@ -249,10 +286,6 @@ switch dynamics
                 c_U = [0;0.05];
                 G_U =  0.2*eye(2);
         end
-
-        % Apply uncertainty scaling
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-
         U = zonotope(c_U, G_U);
 
     case "Square" 
@@ -286,9 +319,6 @@ switch dynamics
                 c_U = [0;0.05];
                 G_U =  0.2*eye(2);
         end
-        % Apply uncertainty scaling
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-
         U = zonotope(c_U, G_U);
 
     case "bicycle"
@@ -323,12 +353,6 @@ switch dynamics
             G_W = eye(dim_x);
             G_V = eye(dim_y);
         end
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_W),  G_W = unc_scaling * G_W;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
         R0 = zonotope([c_R0,G_R0]);
         W = zonotope([c_W,G_W]);
         V = zonotope([c_V,G_V]);
@@ -348,19 +372,9 @@ switch dynamics
         if type ~= "standard"
             throw(CORAerror('CORA:specialError',"Only standard uncertainty sets defined."))
         end
-
-        G_R0 = 0.01;
-        G_W = 0.004;
-        G_V = 0.002;
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_W),  G_W = unc_scaling * G_W;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
-        R0 = zonotope([[1.2;0.5; 0; 5; zeros(14,1)],G_R0*eye(dim_x)]);
-        W = zonotope([zeros(2,1),G_W*eye(2)]);
-        V = zonotope([zeros(dim_y,1),G_V*eye(dim_y)]);
+        R0 = zonotope([[1.2;0.5; 0; 5; zeros(14,1)],0.01*eye(dim_x)]);
+        W = zonotope([zeros(2,1),0.004*eye(2)]);
+        V = zonotope([zeros(dim_y,1),0.002*eye(dim_y)]);
         U = cartProd(W, V);
 
     case "cstrDiscr"
@@ -383,12 +397,6 @@ switch dynamics
         G_R0 = diag([0.005;3]);
         G_W = diag([0.1;2]);
         G_V = 0.002*eye(dim_y);
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_W),  G_W = unc_scaling * G_W;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
         R0 = zonotope([c_R0,G_R0]);
         W = zonotope([c_W,G_W]);
         V = zonotope([c_V,G_V]);
@@ -414,12 +422,6 @@ switch dynamics
         G_R0 = 0.2*eye(6);
         G_W = diag([0.1;2]);
         G_V = 0.002*eye(dim_y);
-        
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_W),  G_W = unc_scaling * G_W;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
         R0 = zonotope([c_R0,G_R0]);
         W = zonotope([c_W,G_W]);
         V = zonotope([c_V,G_V]);
@@ -439,20 +441,9 @@ switch dynamics
         if type ~= "standard"
             throw(CORAerror('CORA:specialError',"Only standard uncertainty sets defined."))
         end
-
-        G_R0 = 0.2;
-        G_W = 0.01;
-        G_V = 0.002;
-
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_U),  G_U = unc_scaling * G_U;  end
-        if ~isempty(G_W),  G_W = unc_scaling * G_W;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
-        R0 = zonotope([12*rand(dim_x,1),G_R0*eye(dim_x)]);
-        W = zonotope([zeros(dim_y-dim_y,1),G_W*eye(dim_u-dim_y)]);
-        V = zonotope([zeros(dim_y,1),G_V*eye(dim_y)]);
+        R0 = zonotope([12*rand(dim_x,1),0.2*eye(dim_x)]);
+        W = zonotope([zeros(dim_y-dim_y,1),0.01*eye(dim_u-dim_y)]);
+        V = zonotope([zeros(dim_y,1),0.002*eye(dim_y)]);
         U = cartProd(W, V);
 
     case "tank60"
@@ -469,18 +460,9 @@ switch dynamics
         if type ~= "standard"
             throw(CORAerror('CORA:specialError',"Only standard uncertainty sets defined."))
         end
-        
-        G_R0 = 0.2;
-        G_W = 0.01;
-        G_V = 0.002;
-        % Apply uncertainty scaling
-        if ~isempty(G_R0), G_R0 = unc_scaling * G_R0; end
-        if ~isempty(G_W),  G_W = unc_scaling * G_W;  end
-        if ~isempty(G_V),  G_V = unc_scaling * G_V;  end
-
-        R0 = zonotope([12*rand(dim_x,1),G_R0*eye(dim_x)]);
-        W = zonotope([zeros(dim_y-dim_y,1),G_W*eye(dim_u-dim_y)]);
-        V = zonotope([zeros(dim_y,1),G_V*eye(dim_y)]);
+        R0 = zonotope([12*rand(dim_x,1),0.2*eye(dim_x)]);
+        W = zonotope([zeros(dim_y-dim_y,1),0.01*eye(dim_u-dim_y)]);
+        V = zonotope([zeros(dim_y,1),0.002*eye(dim_y)]);
         U = cartProd(W, V);
 
 end
@@ -507,5 +489,3 @@ xnew = x + dt*xdot;
 end
 
 % ------------------------------ END OF CODE ------------------------------
-
-

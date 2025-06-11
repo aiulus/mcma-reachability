@@ -69,10 +69,12 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     addParameter(p, 'plot_settings', []);
     addParameter(p, 'dynamics', "Square");
     addParameter(p, 'testSuites', []);
+    addParameter(p, 'sysparams', []);
     parse(p, varargin{:});
     plot_settings = p.Results.plot_settings;
     dynamics = p.Results.dynamics;
     TS_in = p.Results.testSuites;
+    sysparams = p.Results.sysparams;
 
     %% Load default config
     cfg = getConfig();
@@ -90,7 +92,8 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     methods = ["true" methodsGray];
 
     % Load system dynamics
-    [sys, params_true.R0, params_true.U, p_true] = loadDynamics(dynamics, "rand");
+    %[sys, params_true.R0, params_true.U, p_true] = loadDynamics(dynamics, "rand");
+    [sys, params_true.R0, params_true.U, p_true] = custom_loadDynamics(dynamics, "rand", sysparams);
     params_true.tFinal = sys.dt * settings.n_k - sys.dt;
 
     % Build test suites
@@ -101,11 +104,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
         params_true.testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, settings.n_s_val);
     else
         % Use the provided cell array
-        N = numel(TS_in);
-        params_true.testSuite = TS_in;
-        %% Split train/val
-        Mtrain = min(settings.n_m_train, N);
-        Mval = min(settings.n_m_val, N - Mtrain);
+        params_true.testSuite = TS_in();        
         params_true.testSuite_train = TS_in(1:Mtrain);
         params_true.testSuite_val = TS_in(Mtrain+1:Mtrain + Mval);
     end
@@ -114,7 +113,18 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     % Get default identification and black-box approximation options
     options = getConformanceOptions(options_reach, cost_norm, constraints, sys);
 
-    % Create struct for saving the identification results for each system
+    % << New snippet to handle linearARX >>
+    if isa(sys, 'linearARX')
+        % linearARX models need exactly one lag for the aux_testSuite2regress
+        options.approx.p = 1;
+    else
+        % for nonlinearARX or other, use the sys.n_p property
+        options.approx.p = sys.n_p;
+    end
+    % ---------------------------------------------------------------
+    
+    % Create struct for saving the identification results for
+    % each system
     %% TODO: rename to 'results'
     results = cell(length(methodsGray)+1, 1);
     results{1}.sys = sys;
@@ -220,58 +230,8 @@ function validateReachableSets(testSuite, configs, n_k_val, methods, varargin)
     end
 end
 
-function options = getConformanceOptions(options_reach, cost_norm, constraints, sys)
-    options = options_reach;
 
-    options.cs.robustnessMargin = 1e-9;
-    options.cs.verbose = false;
-    options.cs.cost = cost_norm;
-    options.cs.constraints = constraints;
-    
-    % Black-box approximation options
-    options.approx.gp_parallel = true;
-    options.approx.gp_pop_size = 50;
-    options.approx.gp_num_gen = 30;
-    options.approx.gp_func_names = {'times','plus', 'square'};
-    options.approx.gp_max_genes = 2;
-    options.approx.gp_max_depth = 2;
-    options.approx.gp_parallel = false;
-    options.approx.cgp_num_gen = 5;
-    options.approx.cgp_pop_size_base = 5;
-    options.approx.save_res = false;
-    options.approx.p = sys.n_p;
-end
 
-function config = getConfig()
-    settings.n_m = 2; % #different input trajectories
-    settings.n_s = 50; % #sample trajectories per input trajectory
-    settings.n_k = 4; % Length of the identification trajectories
-
-    % Training and validation data
-    settings.n_m_train = 100;
-    settings.n_s_train = 10;
-    settings.n_k_train = 4;
-    settings.n_m_val = 5;
-    settings.n_s_val = 10;
-    settings.n_k_val = 4;    
-
-    config.settings = settings;
-
-    % Reachability settings
-    options_reach.zonotopeOrder = 100;
-    options_reach.tensorOrder = 2;
-    options_reach.errorOrder = 1;
-    options_reach.tensorOrderOutput = 2;
-    options_reach.verbose = false;
-
-    config.options_reach = options_reach;
-
-    config.options_testS.p_extr = 0.3;
-    
-    % Plotting
-    config.plot_settings.plot_Yp = false;
-    config.plot_settings.dims = [1 2];
-end
 
 
 
