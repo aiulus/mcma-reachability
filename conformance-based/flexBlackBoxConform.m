@@ -1,4 +1,4 @@
-function completed = flexBlackBoxConform(varargin)
+function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
 % --------------------------------------------------------------------
     % HOW TO USE flexBlackBoxConform:
     %
@@ -26,6 +26,16 @@ function completed = flexBlackBoxConform(varargin)
     %
     %   flexBlackBoxConform('dynamics', DYN_NAME, 'plot_settings', PLOT_STRUCT)
     %     – Override both at once. Name-value pairs can appear in any order.
+    %   [completed, results, R_id, R_val] = flexBlackBoxConform()
+    %   [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics',DYN,'testSuites',TS)
+    %   [completed, results, R_id, R_val] = flexBlackBoxConform(...,'plot_settings',PS)
+    %
+    % Options:
+    %   dynamics     - override system name (default "Square")
+    %   testSuites   - 1×N cell array of precomputed testSuite structs;
+    %                  if provided, skip createTestSuite and split by getConfig().settings
+    %   plot_settings- override plot settings struct
+
     %
     % IMPORTANT DEFAULTS (defined in getConfig()):
     %   • settings.n_m         = 2
@@ -58,28 +68,24 @@ function completed = flexBlackBoxConform(varargin)
     p = inputParser;
     addParameter(p, 'plot_settings', []);
     addParameter(p, 'dynamics', "Square");
+    addParameter(p, 'testSuites', []);
     parse(p, varargin{:});
-
-    override_plot_settings = p.Results.plot_settings;
+    plot_settings = p.Results.plot_settings;
     dynamics = p.Results.dynamics;
+    TS_in = p.Results.testSuites;
 
     %% Load default config
-    config = getConfig();
-    settings = config.settings;
-    options_reach = config.options_reach;
+    cfg = getConfig();
+    settings = cfg.settings;
+    options_reach = cfg.options_reach;
     options_testS.p_extr = 0.3;
 
     % Use default unless override is provided
-    if isempty(override_plot_settings)
-        plot_settings = config.plot_settings;
-    else
-        plot_settings = override_plot_settings;
-    end
-    
-    cost_norm = "interval"; % norm for the reachable set: "interval","frob"    
-    
-    constraints = "half"; % constraint type: "half", "gen"    
-    
+    if isempty(plot_settings)
+        plot_settings = cfg.plot_settings;
+    end    
+    cost_norm = "interval"; % norm for the reachable set: "interval","frob"        
+    constraints = "half"; % constraint type: "half", "gen"        
     methodsGray = ["blackGP","blackCGP"]; % identification approach    
     methods = ["true" methodsGray];
 
@@ -87,10 +93,22 @@ function completed = flexBlackBoxConform(varargin)
     [sys, params_true.R0, params_true.U, p_true] = loadDynamics(dynamics, "rand");
     params_true.tFinal = sys.dt * settings.n_k - sys.dt;
 
-    % Create identification data
-    params_true.testSuite = createTestSuite(sys, params_true, settings.n_k, settings.n_m, settings.n_s, options_testS);
-    params_true.testSuite_train = createTestSuite(sys, params_true, settings.n_k_train, settings.n_m_train, settings.n_s_train);
-    params_true.testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+    % Build test suites
+    if isempty(TS_in)
+        % Use createTestSuite from CORA
+        params_true.testSuite = createTestSuite(sys, params_true, settings.n_k, settings.n_m, settings.n_s, options_testS);
+        params_true.testSuite_train = createTestSuite(sys, params_true, settings.n_k_train, settings.n_m_train, settings.n_s_train);
+        params_true.testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+    else
+        % Use the provided cell array
+        N = numel(TS_in);
+        params_true.testSuite = TS_in;
+        %% Split train/val
+        Mtrain = min(settings.n_m_train, N);
+        Mval = min(settings.n_m_val, N - Mtrain);
+        params_true.testSuite_train = TS_in(1:Mtrain);
+        params_true.testSuite_val = TS_in(Mtrain+1:Mtrain + Mval);
+    end
 
     %% Conformance Identification ---------------------------------------------
     % Get default identification and black-box approximation options
@@ -107,7 +125,6 @@ function completed = flexBlackBoxConform(varargin)
     % Initial Estimates of the Disturbance Sets
     c_R0 = center(params_true.R0);
     c_U = center(params_true.U);
-
     params_id_init = params_true;
     params_id_init.R0 = zonotope(c_R0);
     params_id_init.U = zonotope([c_U eye(size(c_U, 1)) ones(size(c_U))]);
@@ -130,8 +147,23 @@ function completed = flexBlackBoxConform(varargin)
         fprintf("Identification time: %.4f\n", Ts);
     end
 
-    %% Validation and Visualization -------------------------------------------
+    %% Capture reachsets for later analysis
+    R_id = cell(size(params_true.testSuite));
+    for m=1:numel(params_true.testSuite)
+        [R_id{m}, ~] = validateReach(params_true.testSuite{m}, results, 1);
+    end
 
+    %% Validation and Visualization -------------------------------------------
+    if isempty(TS_in)
+        params_true.tFinal = sys.dt * settings.n_k_val - sys.dt;
+        TS_val = params_true.testSuite_val;
+    else
+        TS_val = params_true.testSuite_val;
+    end
+    R_val = cell(size(TS_val));
+    for m = 1:numel(TS_val)
+        [R_val{m}, ~] = validateReach(TS_val{m}, results, 1, plot_settings);
+    end
     % Sanity check: Compute Reachable Sets and Check Containment of the 
     % Identification Test Cases    
     validateReachableSets(params_true.testSuite, results, settings.n_k_val, ...
@@ -139,9 +171,9 @@ function completed = flexBlackBoxConform(varargin)
 
 
     % Create Validation Data
-    params_true.tFinal = sys.dt * settings.n_k_val - sys.dt;
-    testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, ...
-        settings.n_s_val, options_testS);
+    %params_true.tFinal = sys.dt * settings.n_k_val - sys.dt;
+    %testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, ...
+    %    settings.n_s_val, options_testS);
 
     % Compute Reachable Sets and Check Containment of the Validation Test Cases
     validateReachableSets(testSuite_val, results, settings.n_k_val, ...

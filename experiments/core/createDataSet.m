@@ -1,6 +1,6 @@
 function [data, testSuite] = createDataSet(sys, initpoints, steps, x_all, utraj_all)
     data = aux_DDRA(sys, initpoints, steps, x_all, utraj_all);
-    testSuite = aux_CC(data);
+    testSuite = aux_CC(data, sys.CORA.dt);
 end
 
 function data = aux_DDRA(sys, initpoints, steps, x_all, utraj_all)
@@ -70,7 +70,7 @@ function data = aux_DDRA(sys, initpoints, steps, x_all, utraj_all)
     data.Xtrajs = Xcells;
 end
 
-function testSuite = aux_CC(data)
+function testSuite = aux_CC(data, dt)
 % Inputs:
 %   data must have fields:
 %     .n       (state dimension)
@@ -94,20 +94,11 @@ function testSuite = aux_CC(data)
     testSuite = cell(1, Ntraj);
 
     for i = 1:Ntraj
-        ts = struct();
-
-        % 1) store the input sequence exactly:
-        ts.u = data.Utrajs{i};   % m×T
-
-        % 2) store the “output” as the first T columns of Xtrajs:
-        Xi_full = data.Xtrajs{i};   % n×(T+1)
-        Yi = Xi_full(:, 1:T);             % n×T
-        ts.y = reshape(Yi, [n, T, 1]);     % n×T×1  (one replicate)
-
-        % (Optionally, also store .x if Paper 1’s code uses it)
-        ts.x = reshape(Xi_full, [n, T+1, 1]);  % n×(T+1)×1
-
-        testSuite{i} = ts;
+        Yi = data.Xtrajs{i}(:, 1:T);
+        Ui = data.Utrajs{i};
+        x0 = data.X0{i};
+        tc = testCase(Yi, Ui, x0, dt);
+        testSuite{i} = tc;
     end
 end
 

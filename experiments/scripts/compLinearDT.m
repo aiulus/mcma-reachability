@@ -25,7 +25,7 @@ dt = 0.05;
 initpoints = 5; % #(distinct trajectories to simulate)
 T = 120; % length of each trajectory
 
-plot_toggle = struct('ddra', 1, 'cc', 1);
+plot_toggle = struct('ddra', 0, 'cc', 0);
 
 rng(2);
 
@@ -61,4 +61,4 @@ if plot_toggle.ddra
 end
 
 %% 3 - Run the Conformance Checking pipeline
-res = flexBlackBoxConform(testSuites);
+[completed, results, R_id, R_val] = flexBlackBoxConform('testSuites', testSuites);
