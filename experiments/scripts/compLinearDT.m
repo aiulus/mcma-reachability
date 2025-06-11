@@ -45,6 +45,7 @@ X0_set = []; U_set = []; W = []; WmatZ = [];
                                        0.1, 0.2, ...   % U_center & U_spread
                                        -0.05, 0.1);  % W_center & W_spread
 
+% Create the datasets
 cfg = getConfig();
 settings = cfg.settings;
 params = struct('R0', R0, 'U', U);
@@ -52,9 +53,12 @@ testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_
 testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
 testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
 complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
+%% ACHTUNG!!-- aux_CORAtoDDRA currently propagates X0 with (A, B, C, D)
+%%          -- only use systems with n=p in the future!
 [x_all, utraj_all] = aux_CORAtoDDRA(complete_testSuite, sys);
 
 %% 2 - Run the DDRA pipeline
+
 [U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all, false);
 M_ab = estimateAB_ddra(sys.discrete, X_0T, X_1T, U_full, Wmatzono);
 totalsteps = 10; % #(identification steps after identification)

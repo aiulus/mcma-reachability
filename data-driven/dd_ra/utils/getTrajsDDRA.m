@@ -1,7 +1,7 @@
 function [U_full, X_0T, X_1T] = ...
     getTrajsDDRA(sys, initpoints, steps, x, utraj, plot_toggle)
 
-    n = sys.dims.n; m = sys.dims.m;
+    n = size(sys.A, 1); m = size(sys.B, 2);
     totalsamples = initpoints*steps;
 
     % Preallocate matrices

@@ -1,37 +1,50 @@
 function [x_all, utraj_all] = aux_CORAtoDDRA(testSuite, sys)
+% AUX_CORATODDRA  Convert CORA testSuite to flat data for DDRA pipeline
+%   Supports multiple replicates per testCase by flattening along third dim.
+% Inputs:
+%   testSuite - 1×N cell of testCase objects, each with fields:
+%                  .initialState  (n×1×s)
+%                  .u             (T×m×s)
+%   sys       - system struct with sys.discrete.A (n×n) and B (n×m)
+% Outputs:
+%   x_all     - (N*s*n)×(T+1) matrix: stacked state trajectories
+%   utraj_all - (N*s*m)×T       matrix: stacked input trajectories
+
     N = numel(testSuite);
-    % Determine state/input dims and horizon
+    % State dimension
     n = size(testSuite{1}.initialState,1);
-    if isempty(testSuite{1}.u)
-        error('convertDynamicsData:NoInput','Each testSuite entry must have .u');
-    end
-    % testSuite{1}.u is T×m×replicates (rep=1)
-    [T, m, rep] = size(testSuite{1}.u);
-    if rep~=1
-        error('convertDynamicsData:MultiRep','Only single replicate supported');
-    end
+    % Input trajectory size: T×m×s
+    [T, m, s] = size(testSuite{1}.u);
+
+    % Total trajectories = N * s
+    totalTraj = N * s;
 
     % Preallocate
-    x_all     = zeros(N*n, T+1);
-    utraj_all = zeros(N*m, T);
+    x_all     = zeros(totalTraj * n, T+1);
+    utraj_all = zeros(totalTraj * m, T);
 
+    idx = 0;
     for i = 1:N
         tc = testSuite{i};
-        % initial state
-        x0 = tc.initialState;
-        % input trajectory: T×m
-        Umat = squeeze(tc.u);
-        % reconstruct state trajectory via discrete A,B
-        Xmat = zeros(n, T+1);
-        Xmat(:,1) = x0;
-        for k = 1:T
-            Xmat(:,k+1) = sys.discrete.A * Xmat(:,k) + sys.discrete.B * Umat(k,:)';
+        % initialState: n×1×s
+        X0 = tc.initialState;
+        % u: T×m×s
+        Uall = tc.u;
+        for j = 1:s
+            idx = idx + 1;
+            x0 = X0(:,:,j);         % n×1
+            Umat = squeeze(Uall(:,:,j));  % T×m
+            % Reconstruct state trajectory
+            Xmat = zeros(n, T+1);
+            Xmat(:,1) = x0;
+            for k = 1:T
+                Xmat(:,k+1) = sys.A * Xmat(:,k) + sys.B * Umat(k,:)';
+            end
+            % Store
+            rows_x = (idx-1)*n + (1:n);
+            rows_u = (idx-1)*m + (1:m);
+            x_all(rows_x, :)     = Xmat;
+            utraj_all(rows_u, :) = Umat';
         end
-        % store into flat arrays
-        rows_x = (i-1)*n + (1:n);
-        rows_u = (i-1)*m + (1:m);
-        x_all(rows_x, :)     = Xmat;
-        utraj_all(rows_u, :) = Umat';
     end
 end
-
