@@ -29,6 +29,21 @@ function sys = systemsDDRA(sys_type, dt, dim)
     end
 
     switch lower(sys_type)
+        case 'pedestrian'
+            params = [1 0.01 5e-5 0.01]';
+           
+            A = [params(1)	0	    params(2)	0
+                0	    params(1)	0	    params(2)
+                0	    0	    params(1)	0
+                0	    0	    0	    params(1)];
+            B =[params(3)    0       0       0
+                0	    params(3)    0       0
+                params(4)    0       0       0
+                0	    params(4)    0       0];
+            C =[1	    0	    0	    0
+                0	    1	    0	    0];
+            D =[0	    0       1       0
+                0	    0       0       1];
         case 'chain_of_integrators'
             n = dim;
             A = diag(ones(n-1, 1), 1);

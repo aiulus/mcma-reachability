@@ -18,5 +18,6 @@ function options = getConformanceOptions(options_reach, cost_norm, constraints, 
     options.approx.cgp_pop_size_base = 5;
     options.approx.save_res = false;
     %options.approx.p = sys.n_p;
-    options.approx.p = 0;
+    options.approx.p = sys.nrOfOutputs;
+    options.approx.p = 4;
 end

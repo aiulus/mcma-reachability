@@ -18,7 +18,7 @@
 clear; clc;
 
 %% 0 - Specify system & data parameters
-systype = 'chain_of_integrators';
+systype = 'pedestrian';
 %systype = 'Square';
 dim = 4;
 dt = 0.05;
@@ -36,10 +36,13 @@ sys = systemsDDRA(systype, dt, dim);
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; W = []; WmatZ = [];
 
+
+%% TODO: DDRA models process noise, CC msmt. noise
+% uses uncertainty set specifications in loadDynamics, option "standard"
 [X0, U, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
-                                       ones(dim,1), 0.1*eye(dim), ...   % X0_center & X0_spread
-                                       1*ones(sys.dims.m,1), 0.25*eye(sys.dims.m), ...   % U_center & U_spread
-                                       0*ones(dim,1), 0.005*eye(dim));  % W_center & W_spread
+                                       0, 0, ...   % X0_center & X0_spread
+                                       0.1, 0.2, ...   % U_center & U_spread
+                                       -0.05, 0.1);  % W_center & W_spread
 
 % Simulate the system dynamics with random samples from X0 and W
 [x_all, utraj_all] = getDataDDRA(sys, initpoints, T, X0, U, W);

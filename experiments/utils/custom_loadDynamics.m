@@ -1,4 +1,4 @@
-function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, p)
+function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, params)
 % loadDynamics - load system dynamics and uncertainty sets
 %
 % Syntax:
@@ -56,32 +56,64 @@ end
 switch dynamics
     case "chain_of_integrators"
     % Chain-of-integrators linear discrete-time model
-    % We take `dim` from the third argument `p`
-    n  = p;  
+    % We take 'dim' from the third argument 'params'
+    p_true = [];
+    n  = params;  
     A  = diag(ones(n-1,1),1);
     B  = zeros(n,1); B(end)=1;
     C  = eye(n);
     D  = zeros(n,1);
-    dt = 0.05;  % or whatever sampling time you want
+    dt = 0.05;  
+
     sys = linearSysDT(A,B,[],C,D,dt);
-    R0     = zonotope(zeros(n,1), eye(n));
-    U      = zonotope(zeros(1,1), 1);
-    p_true = n;
+
+    % create uncertainty sets
+    dim_x = size(A, 1);
+    dim_u = size(B, 2);
+    dim_v = size(C, 1);
+    switch type
+        case "rand"
+            c_R0 = [-0.76; -9.68; 0.21; -5.42];
+            c_U = [-0.16; -8.93];
+            c_V = [1.48; -7.06];
+            G_R0 = [-0.02 0.13 0.10 0.06
+                0.30 -0.24  0.21 -0.16
+                0.28  0.14  0.15  0.18
+                0.28  0.33 -0.06 -0.23];
+            G_U = [0.07   -0.25
+                -0.28   -0.11];
+            G_V = [-0.08    0.01
+                -0.00   -0.03];
+        case "diag"
+            c_R0 = 0.1*[-0.76; -9.68; 0.21; -5.42];
+            c_U = 0.1*[-0.16; -8.93];
+            c_V = 0.1*[1.48; -7.06];
+            G_R0 = diag([0.22 0.13 0.10 0.06]);
+            G_U = diag([0.07 0.25]);
+            G_V = diag([0.08 0.01]);
+        case "standard"
+            c_R0 = zeros(dim_x,1);
+            G_R0 = [];
+            c_U = 0.1+zeros(dim_u,1);
+            G_U = 0.2*diag(ones(dim_u,1));
+            c_V =  -0.05+zeros(dim_v,1);
+            G_V = 0.1*[diag(ones(dim_v,1)) ones(dim_v,1)];
+    end
+    R0 = zonotope([c_R0,G_R0]);
+    V = zonotope([c_V,G_V]);
+    U = cartProd(zonotope([c_U,G_U]), V);
     
     case "pedestrian"
         % pedestrian model as a state-space model [1]
-        p_true = [1 0.01 5e-5 0.01]';
-        if nargin < 3
-            p = p_true;
-        end
-        A = [p(1)	0	    p(2)	0
-            0	    p(1)	0	    p(2)
-            0	    0	    p(1)	0
-            0	    0	    0	    p(1)];
-        B =[p(3)    0       0       0
-            0	    p(3)    0       0
-            p(4)    0       0       0
-            0	    p(4)    0       0];
+        params = [1 0.01 5e-5 0.01]'; p_true = params;        
+        A = [params(1)	0	    params(2)	0
+            0	    params(1)	0	    params(2)
+            0	    0	    params(1)	0
+            0	    0	    0	    params(1)];
+        B =[params(3)    0       0       0
+            0	    params(3)    0       0
+            params(4)    0       0       0
+            0	    params(4)    0       0];
         C =[1	    0	    0	    0
             0	    1	    0	    0];
         D =[0	    0       1       0
@@ -130,18 +162,18 @@ switch dynamics
         % pedestrian model as an ARX model [1]
         p_true = [2 -1 5e-5 -2]';
         if nargin < 3
-            p = p_true;
+            params = p_true;
         end
-        A{1,1} = [  p(1)	0	    
-                    0	    p(1)];
-        A{2,1} = [  p(2)	0	    
-                    0	    p(2)];
+        A{1,1} = [  params(1)	0	    
+                    0	    params(1)];
+        A{2,1} = [  params(2)	0	    
+                    0	    params(2)];
         B{1,1} = [  0	    0       1       0
                     0	    0       0       1];
-        B{2,1} = [  p(3)    0       p(4)    0
-                    0	    p(3)    0       p(4)];
-        B{3,1} = [  p(3)    0       1       0
-                    0	    p(3)    0       1];
+        B{2,1} = [  params(3)    0       params(4)    0
+                    0	    params(3)    0       params(4)];
+        B{3,1} = [  params(3)    0       1       0
+                    0	    params(3)    0       1];
         dt = 0.01;
         sys = linearARX(A, B, dt);
 
@@ -176,10 +208,10 @@ switch dynamics
         % Lorenz system [2]
         p_true = [10 28 8/3]';
         if nargin < 3
-            p = p_true;
+            params = p_true;
         end
         dt = 0.01;
-        fun = @(x,u) aux_dynLorenz(x,u,dt,p);
+        fun = @(x,u) aux_dynLorenz(x,u,dt,params);
         dim_x = 3;
         dim_u = 3;
         dim_y = 2;
@@ -216,10 +248,10 @@ switch dynamics
         % first two dimensions of the Lorenz system [2]
         p_true = [10 28]';
         if nargin < 3
-            p = p_true;
+            params = p_true;
         end
         dt = 0.01;
-        fun = @(x,u) aux_dynLorenz2D(x,u,dt,p);
+        fun = @(x,u) aux_dynLorenz2D(x,u,dt,params);
         dim_x = 2;
         dim_u = 2;
         dim_y = 2;
@@ -254,11 +286,11 @@ switch dynamics
         % artificial NARX model, adapted from [3]
         p_true = [0.8 1.2]';
         if nargin < 3
-            p = p_true;
+            params = p_true;
         end
 
-        f = @(y,u) [y(1,1)/(1+y(2,1)^2) + p(1)*u(3,1); ...
-            (y(1,1) * y(2,1))/(1+y(2,1)^2)+ p(2)*u(6,1)];
+        f = @(y,u) [y(1,1)/(1+y(2,1)^2) + params(1)*u(3,1); ...
+            (y(1,1) * y(2,1))/(1+y(2,1)^2)+ params(2)*u(6,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
@@ -287,11 +319,11 @@ switch dynamics
         % artificial, simple NARX model
         p_true = [0.8 1.2]';
         if nargin < 3
-            p = p_true;
+            params = p_true;
         end
 
-        f = @(y,u) [y(1,1)^2 + p(1)*u(3,1); ...
-            y(2,1)^2+p(2)*u(2,1)];
+        f = @(y,u) [y(1,1)^2 + params(1)*u(3,1); ...
+            y(2,1)^2+params(2)*u(2,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
