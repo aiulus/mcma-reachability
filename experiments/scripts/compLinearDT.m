@@ -59,7 +59,7 @@ complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val)
 
 %% 2 - Run the DDRA pipeline
 
-[U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all, false);
+[U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all.', false);
 M_ab = estimateAB_ddra(sys.discrete, X_0T, X_1T, U_full, Wmatzono);
 totalsteps = 10; % #(identification steps after identification)
 [X_model_P2, X_data_P2] = propagateDDRA(X0, U, W, sys.discrete, M_ab, totalsteps);

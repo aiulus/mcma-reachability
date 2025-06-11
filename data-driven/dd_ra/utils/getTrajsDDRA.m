@@ -1,22 +1,22 @@
 function [U_full, X_0T, X_1T] = ...
-    getTrajsDDRA(sys, initpoints, steps, x, utraj, plot_toggle)
+    getTrajsDDRA(sys, initpoints, T, x, utraj, plot_toggle)
 
     n = size(sys.A, 1); m = size(sys.B, 2);
-    totalsamples = initpoints*steps;
+    totalsamples = initpoints*T;
 
     % Preallocate matrices
     u_mean_vec_0 = zeros(m, totalsamples);     
     x_meas_vec_0 = zeros(n, totalsamples);     
-    x_meas_vec_1 = zeros(n, totalsamples);     
+    x_meas_vec_1 = zeros(n, totalsamples);   
 
     index_0 = 1; index_1 = 1;
 
     for j = 1:n:initpoints * n
-        for i = 2:steps+1
+        for i = 2:T+1
             x_meas_vec_1(:, index_1) = x(j:j+n-1, i);
             index_1 = index_1 + 1;
         end
-        for i = 1:steps
+        for i = 1:T
             u_mean_vec_0(:, index_0) = utraj(j:j+m-1, i);
             x_meas_vec_0(:, index_0) = x(j:j+n-1, i);
             index_0 = index_0 + 1;
