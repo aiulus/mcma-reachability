@@ -1,8 +1,8 @@
 function [X0, U, W, Wmatzono] = initialSetupDDRA(sys, initpoints, steps, ...
     X0_center, X0_spread, U_center, U_spread, W_center, W_spread)
 
-    n = sys.dims.n;
-    m = sys.dims.m;
+    n = size(sys.A, 1);
+    m = size(sys.B, 2);
     totalsamples = initpoints*steps;
 
     X0 = zonotope(X0_center*ones(n, 1), X0_spread*eye(n));

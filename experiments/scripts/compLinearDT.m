@@ -31,7 +31,8 @@ plot_toggle = struct('ddra', 0, 'cc', 0);
 rng(2);
 
 %% 1 - Simulate the system / generate the datasets
-sys = systemsDDRA(systype, dt, dim);
+%sys = systemsDDRA(systype, dt, dim);
+[sys, R0, U, p_true] = custom_loadDynamics(systype, "rand");
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; W = []; WmatZ = [];
@@ -39,16 +40,19 @@ X0_set = []; U_set = []; W = []; WmatZ = [];
 
 %% TODO: DDRA models process noise, CC msmt. noise
 % uses uncertainty set specifications in loadDynamics, option "standard"
-[X0, U, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
+[~, ~, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
                                        0, 0, ...   % X0_center & X0_spread
                                        0.1, 0.2, ...   % U_center & U_spread
                                        -0.05, 0.1);  % W_center & W_spread
 
-% Simulate the system dynamics with random samples from X0 and W
-[x_all, utraj_all] = getDataDDRA(sys, initpoints, T, X0, U, W);
-
-% Create the datasets
-[data, testSuites] = createDataSet(sys, initpoints, T, x_all, utraj_all);
+cfg = getConfig();
+settings = cfg.settings;
+params = struct('R0', R0, 'U', U);
+testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
+testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
+testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
+[x_all, utraj_all] = aux_CORAtoDDRA(complete_testSuite, sys);
 
 %% 2 - Run the DDRA pipeline
 [U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all, false);
