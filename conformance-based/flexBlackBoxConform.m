@@ -112,16 +112,6 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     %% Conformance Identification ---------------------------------------------
     % Get default identification and black-box approximation options
     options = getConformanceOptions(options_reach, cost_norm, constraints, sys);
-
-    % << New snippet to handle linearARX >>
-    if isa(sys, 'linearARX')
-        % linearARX models need exactly one lag for the aux_testSuite2regress
-        options.approx.p = 1;
-    else
-        % for nonlinearARX or other, use the sys.n_p property
-        options.approx.p = sys.n_p;
-    end
-    % ---------------------------------------------------------------
     
     % Create struct for saving the identification results for
     % each system

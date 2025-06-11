@@ -62,4 +62,6 @@ if plot_toggle.ddra
 end
 
 %% 3 - Run the Conformance Checking pipeline
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', dim);
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', dim);
+%% Temporarily disabling dataset passing
+[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', dim);

@@ -63,12 +63,7 @@ switch dynamics
     C  = eye(n);
     D  = zeros(n,1);
     dt = 0.05;  % or whatever sampling time you want
-    %sys = linearSysDT(A,B,[],C,D,dt);
-
-    % Wrap into cell arrays for linearARX()
-    A_bar = { A };
-    B_bar = { B };
-    sys = linearARX(A_bar, B_bar, dt);
+    sys = linearSysDT(A,B,[],C,D,dt);
     R0     = zonotope(zeros(n,1), eye(n));
     U      = zonotope(zeros(1,1), 1);
     p_true = n;
