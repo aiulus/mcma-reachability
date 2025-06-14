@@ -18,7 +18,8 @@
 clear; clc;
 
 %% 0 - Specify system & data parameters
-systype = 'pedestrian'; % Use 'Square' to test with a nonlinear system
+% 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
+systype = 'Square'; 
 dim = 4;
 dt = 0.05;
 
@@ -31,7 +32,7 @@ rng(2);
 
 %% 1 - Simulate the system / generate the datasets
 % custom_loadDynamics - extends CORA's loadDynamics()
-[sys, R0, U, p_true] = custom_loadDynamics(systype, "rand");
+[sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand");
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; W = []; WmatZ = [];
@@ -41,10 +42,10 @@ X0_set = []; U_set = []; W = []; WmatZ = [];
 % uses uncertainty set specifications in loadDynamics, option "standard"
 
 % initialSetupDDRA - just sets the uncertainty sets
-[~, ~, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
-                                       0, 0, ...   % X0_center & X0_spread
-                                       0.1, 0.2, ...   % U_center & U_spread
-                                       -0.05, 0.1);  % W_center & W_spread
+%[~, ~, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
+%                                       0, 0, ...   % X0_center & X0_spread
+%                                       0.1, 0.2, ...   % U_center & U_spread
+%                                       -0.05, 0.1);  % W_center & W_spread
 
 % Create the datasets
 % getConfig() - Custom function. Sets hyperparameters such as the number of 
@@ -53,7 +54,7 @@ X0_set = []; U_set = []; W = []; WmatZ = [];
 %               configuration files. 
 cfg = getConfig();
 settings = cfg.settings;
-params = struct('R0', R0, 'U', U);
+%params = struct('R0', R0, 'U', U);
 
 % createTestSuite - CORA fuction
 testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
