@@ -35,7 +35,7 @@ rng(2);
 [sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand");
 
 % Initialize data structures for the zonotopes
-X0_set = []; U_set = []; W = []; WmatZ = zonotope(0, 0);
+X0_set = []; U_set = []; W = []; WmatZ = zonotope(zeros(sys.nrOfStates), 0.01*eye(sys.nrOfStates));
 
 
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise

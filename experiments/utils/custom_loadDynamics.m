@@ -88,6 +88,75 @@ switch dynamics
                 G_U = 0.2 * eye(dim_u);
         end
         U = zonotope([c_U, G_U]);
+        case "polyNARX"
+        % Polynomial NARX system: x = y + ε
+        p_true = [1.5, -0.8]';
+        if nargin < 3
+            params = p_true;
+        end
+
+        % Polynomial update: quadratic nonlinearity
+        f = @(y,u) [params(1) * y(1,1)^2 + u(1,1);
+                    params(2) * y(2,1)^2 + u(2,1)];
+        dt = 0.1;
+        dim_y = 2;
+        dim_u = 2;
+        p_dim = 1;
+        sys = nonlinearARX('polyNARX', f, dt, dim_y, dim_u, p_dim);
+
+        % Initial state
+        c_R0 = zeros(dim_y * p_dim, 1);
+        G_R0 = 0.05 * eye(dim_y * p_dim);
+        R0 = zonotope([c_R0, G_R0]);
+
+        % Input uncertainty
+        switch type
+            case "rand"
+                c_U = randn(dim_u,1);
+                G_U = rand(dim_u, dim_u);
+            case "diag"
+                c_U = 0.1 * randn(dim_u,1);
+                G_U = diag(0.1 * rand(dim_u,1));
+            case "standard"
+                c_U = zeros(dim_u,1);
+                G_U = 0.2 * eye(dim_u);
+        end
+        U = zonotope([c_U, G_U]);
+        
+    case "lipschitzNARX"
+        % Lipschitz-continuous NARX system: x = y + ε
+        p_true = [0.6, -1.2]';
+        if nargin < 3
+            params = p_true;
+        end
+
+        % Smooth update: bounded slope with tanh, logs
+        f = @(y,u) [params(1) * tanh(y(1,1)) + 0.1 * log(1 + abs(y(2,1))) + u(1,1);
+                    params(2) * tanh(y(2,1)) + 0.05 * y(1,1) + u(2,1)];
+        dt = 0.1;
+        dim_y = 2;
+        dim_u = 2;
+        p_dim = 1;
+        sys = nonlinearARX('lipschitzNARX', f, dt, dim_y, dim_u, p_dim);
+
+        % Initial state
+        c_R0 = zeros(dim_y * p_dim, 1);
+        G_R0 = 0.05 * eye(dim_y * p_dim);
+        R0 = zonotope([c_R0, G_R0]);
+
+        % Input uncertainty
+        switch type
+            case "rand"
+                c_U = randn(dim_u,1);
+                G_U = rand(dim_u, dim_u);
+            case "diag"
+                c_U = 0.1 * randn(dim_u,1);
+                G_U = diag(0.1 * rand(dim_u,1));
+            case "standard"
+                c_U = zeros(dim_u,1);
+                G_U = 0.2 * eye(dim_u);
+        end
+        U = zonotope([c_U, G_U]);
 
     case "chain_of_integrators"
     % Chain-of-integrators linear discrete-time model
