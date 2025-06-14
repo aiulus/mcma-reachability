@@ -18,8 +18,7 @@
 clear; clc;
 
 %% 0 - Specify system & data parameters
-systype = 'pedestrian';
-%systype = 'Square';
+systype = 'pedestrian'; % Use 'Square' to test with a nonlinear system
 dim = 4;
 dt = 0.05;
 
@@ -31,37 +30,59 @@ plot_toggle = struct('ddra', 0, 'cc', 0);
 rng(2);
 
 %% 1 - Simulate the system / generate the datasets
-%sys = systemsDDRA(systype, dt, dim);
+% custom_loadDynamics - extends CORA's loadDynamics()
 [sys, R0, U, p_true] = custom_loadDynamics(systype, "rand");
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; W = []; WmatZ = [];
 
 
-%% TODO: DDRA models process noise, CC msmt. noise
+%% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
 % uses uncertainty set specifications in loadDynamics, option "standard"
+
+% initialSetupDDRA - just sets the uncertainty sets
 [~, ~, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
                                        0, 0, ...   % X0_center & X0_spread
                                        0.1, 0.2, ...   % U_center & U_spread
                                        -0.05, 0.1);  % W_center & W_spread
 
 % Create the datasets
+% getConfig() - Custom function. Sets hyperparameters such as the number of 
+%               distinct trajectories in the testSuite, length of the
+%               trajectories, etc. Will later be converted to .mat
+%               configuration files. 
 cfg = getConfig();
 settings = cfg.settings;
 params = struct('R0', R0, 'U', U);
+
+% createTestSuite - CORA fuction
 testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
 testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
 testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
 complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
+
 %% ACHTUNG!!-- aux_CORAtoDDRA currently propagates X0 with (A, B, C, D)
 %%          -- only use systems with n=p in the future!
+
+% aux_CORAtoDDRA - Custom function that converts testSuite objects to data
+%                  representation format that the DDRA pipeline expects
 [x_all, utraj_all] = aux_CORAtoDDRA(complete_testSuite, sys);
 
 %% 2 - Run the DDRA pipeline
 
+% getTrajsDDRA - Custom function. Takes single-trajectory data and creates
+%                the time-shifted objects X_-, X_+ etc.
 [U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all.', false);
+
+% estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
+%                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
+%                   Alanwar et.al.
 M_ab = estimateAB_ddra(sys.discrete, X_0T, X_1T, U_full, Wmatzono);
+
 totalsteps = 10; % #(identification steps after identification)
+
+% propagateDDRA - Custom function. Uses the previously computed
+%                 $\mathcal{M}_{AB}$ to compute the reachable sets. 
 [X_model_P2, X_data_P2] = propagateDDRA(X0, U, W, sys.discrete, M_ab, totalsteps);
 
 % Visualize
@@ -73,6 +94,6 @@ if plot_toggle.ddra
 end
 
 %% 3 - Run the Conformance Checking pipeline
-%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', dim);
-%% Temporarily disabling dataset passing
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', dim);
+[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', dim);
+
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', dim);
