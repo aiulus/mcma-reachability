@@ -19,7 +19,7 @@ clear; clc;
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'example_NARX'; 
+systype = 'mockSys'; 
 dim = 4;
 dt = 0.05;
 
@@ -32,7 +32,8 @@ rng(2);
 
 %% 1 - Simulate the system / generate the datasets
 % custom_loadDynamics - extends CORA's loadDynamics()
-[sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand");
+sysparams.dim = 5;
+[sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand", sysparams);
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; W = []; WmatZ = zonotope(zeros(sys.nrOfStates), 0.01*eye(sys.nrOfStates));

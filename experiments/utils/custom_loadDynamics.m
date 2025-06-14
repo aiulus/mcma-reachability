@@ -54,6 +54,42 @@ if nargin == 1
 end
 
 switch dynamics
+    case "mockSys"
+        p_true = [];
+        if nargin < 3
+            params = p_true;
+        end
+        n = params.dim;
+        A = eye(n) + 1.01 * diag(ones(n-1,1), 1);
+        B = ones(n, 1);
+
+        f = @(y, u) A * y + B .* u;
+        dt = 0.1;
+        dim_y = n;
+        dim_u = 1;
+        %% TODO: Not sure what this is used for
+        p_dim = 1;
+        sys = nonlinearARX('customNARX', f, dt, dim_y, dim_u, p_dim);
+
+        % Initial state set R0
+        c_R0 = zeros(dim_y * p_dim, 1);
+        G_R0 = 0.05 * eye(dim_y * p_dim);
+        R0 = zonotope([c_R0, G_R0]);
+
+        % Input uncertainty
+        switch type
+            case "rand"
+                c_U = randn(dim_u,1);
+                G_U = rand(dim_u, dim_u);
+            case "diag"
+                c_U = 0.1 * randn(dim_u,1);
+                G_U = diag(0.1 * rand(dim_u,1));
+            case "standard"
+                c_U = zeros(dim_u,1);
+                G_U = 0.2 * eye(dim_u);
+        end
+        U = zonotope([c_U, G_U]);
+
     case "example_NARX"
         % Custom NARX with full observability x = y + ε
         p_true = [1.0, -0.5]'; % example parameters
@@ -88,7 +124,7 @@ switch dynamics
                 G_U = 0.2 * eye(dim_u);
         end
         U = zonotope([c_U, G_U]);
-        case "polyNARX"
+    case "polyNARX"
         % Polynomial NARX system: x = y + ε
         p_true = [1.5, -0.8]';
         if nargin < 3
@@ -122,7 +158,7 @@ switch dynamics
                 G_U = 0.2 * eye(dim_u);
         end
         U = zonotope([c_U, G_U]);
-        
+
     case "lipschitzNARX"
         % Lipschitz-continuous NARX system: x = y + ε
         p_true = [0.6, -1.2]';
