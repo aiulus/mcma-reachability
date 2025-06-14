@@ -35,7 +35,7 @@ rng(2);
 [sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand");
 
 % Initialize data structures for the zonotopes
-X0_set = []; U_set = []; W = []; WmatZ = [];
+X0_set = []; U_set = []; W = []; WmatZ = zonotope(0, 0);
 
 
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
@@ -80,7 +80,7 @@ complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val)
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
 %                   Alanwar et.al.
-M_ab = estimateAB_ddra(sys.discrete, X_0T, X_1T, U_full, Wmatzono);
+M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_full, WmatZ);
 
 totalsteps = 10; % #(identification steps after identification)
 

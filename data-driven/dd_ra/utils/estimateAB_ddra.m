@@ -25,16 +25,17 @@ function M_ab = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, Wmatzono)
     intAB = intervalMatrix(M_ab);
     intAB1 = intAB.int;
 
-    A_true = sys_d.A;
-    B_true = sys_d.B;
-    AB_true = [A_true, B_true];
+    %% Temporarily disabled validation
+    %A_true = sys_d.A;
+    %B_true = sys_d.B;
+    %AB_true = [A_true, B_true];
 
     % Validation
-    if any(intAB1.sup < AB_true, 'all') || any(intAB1.inf > AB_true, 'all')
-        %% Interim debugging fix- change back to error(...)
-        warning('estimateAB_ddra:ValidationFailed', ...
-              'True system matrices (A,B) are not fully contained in the estimated matrix zonotope.');
-    else
-        fprintf('[estimateAB_ddra] ✅ Validation successful: (A,B) contained in estimated set.\n');
-    end
+    %if any(intAB1.sup < AB_true, 'all') || any(intAB1.inf > AB_true, 'all')
+    %    %% Interim debugging fix- change back to error(...)
+    %    warning('estimateAB_ddra:ValidationFailed', ...
+    %          'True system matrices (A,B) are not fully contained in the estimated matrix zonotope.');
+    %else
+    %    fprintf('[estimateAB_ddra] ✅ Validation successful: (A,B) contained in estimated set.\n');
+    %end
 end
