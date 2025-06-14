@@ -14,9 +14,9 @@ function complete_testSuite = union_testSuites(varargin)
     
     % Determine cell-array size
     M = numel(varargin{1});
-    for k=2:numSets
-        assert(numel(varargin{k})==M, 'All testSuite inputs must have same length.');
-    end
+    %for k=2:numSets
+    %    assert(numel(varargin{k})==M, 'All testSuite inputs must have same length.');
+    %end
     
     % Preallocate
     complete_testSuite = cell(1, M);

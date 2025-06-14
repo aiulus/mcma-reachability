@@ -1,7 +1,11 @@
 function [U_full, X_0T, X_1T] = ...
     getTrajsDDRA(sys, initpoints, T, x, utraj, plot_toggle)
+    
+    % For systemsDDRA objects
+    %n = size(sys.A, 1); m = size(sys.B, 2);
 
-    n = size(sys.A, 1); m = size(sys.B, 2);
+    % For CORA loadDynamics() objects
+    n = sys.nrOfStates; m = sys.nrOfInputs;
     totalsamples = initpoints*T;
 
     % Preallocate matrices

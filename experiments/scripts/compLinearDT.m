@@ -19,7 +19,7 @@ clear; clc;
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'Square'; 
+systype = 'example_NARX'; 
 dim = 4;
 dt = 0.05;
 
@@ -60,6 +60,9 @@ settings = cfg.settings;
 testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
 testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
 testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+
+% union_testSuites - Custom function. Builds the union of multiple
+%                    testSuite objects. 
 complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
 
 %% ACHTUNG!!-- aux_CORAtoDDRA currently propagates X0 with (A, B, C, D)
@@ -67,10 +70,9 @@ complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val)
 
 % aux_CORAtoDDRA - Custom function that converts testSuite objects to data
 %                  representation format that the DDRA pipeline expects
-[x_all, utraj_all] = aux_CORAtoDDRA(complete_testSuite, sys);
+[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite, sys);
 
 %% 2 - Run the DDRA pipeline
-
 % getTrajsDDRA - Custom function. Takes single-trajectory data and creates
 %                the time-shifted objects X_-, X_+ etc.
 [U_full, X_0T, X_1T] = getTrajsDDRA(sys, initpoints, T, x_all, utraj_all.', false);
