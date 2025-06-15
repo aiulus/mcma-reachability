@@ -75,9 +75,10 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     dynamics = p.Results.dynamics;
     TS_in = p.Results.testSuites;
     sysparams = p.Results.sysparams;
+    cfg = sysparams.cfg;
 
     %% Load default config
-    cfg = getConfig();
+    %cfg = getConfig();
     settings = cfg.settings;
     options_reach = cfg.options_reach;
     options_testS.p_extr = 0.3;

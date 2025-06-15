@@ -20,6 +20,7 @@ clear; clc;
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
 systype = 'mockSys'; 
+%systype = 'polyNARX';
 dim = 4;
 dt = 0.1;
 
@@ -29,13 +30,8 @@ rng(2);
 
 %% 1 - Simulate the system / generate the datasets
 % custom_loadDynamics - extends CORA's loadDynamics()
-sysparams.dim = 5;
+sysparams.dim = dim;
 [sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand", sysparams);
-
-% Initialize data structures for the zonotopes
-X0_set = []; U_set = []; 
-W = zonotope(zeros(sys.nrOfStates, 1), 0*eye(sys.nrOfStates, 15));
-WmatZ = zonotope(zeros(sys.nrOfStates, 1), 0.01*eye(sys.nrOfStates, 15));
 
 
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
@@ -85,6 +81,11 @@ testSuites = struct('testSuite', testSuite, 'testSuite_train', testSuite_train, 
 %                the time-shifted objects X_-, X_+ etc.
 [X_0T, X_1T, U_plus] = shift_trajs(T_k, x_all, utraj_all);
 
+% Initialize data structures for the zonotopes
+X0_set = []; U_set = []; 
+W = zonotope(zeros(sys.nrOfStates, 1), 0*eye(sys.nrOfStates, size(X_1T, 2)));
+WmatZ = zonotope(zeros(sys.nrOfStates, 1), 0.01*eye(sys.nrOfStates, size(X_1T, 2)));
+
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
 %                   Alanwar et.al.
@@ -106,7 +107,8 @@ end
 
 %% 3 - Run the Conformance Checking pipeline
 % Pass any relevant parameters to flexBlackBoxConform
-sysparams.dim = dim;
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+sysparams.cfg = cfg;
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 
-%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', dim);
+% Temporarily disabling dataset passing
+[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);
