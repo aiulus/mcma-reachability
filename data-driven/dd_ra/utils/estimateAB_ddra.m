@@ -1,4 +1,4 @@
-function M_ab = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, Wmatzono)
+function M_ab = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, WmatZ)
     % estimateAB_ddra: Estimate set of matrices (A, B) from data and validate inclusion.
     %
     % Inputs:
@@ -16,10 +16,10 @@ function M_ab = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, Wmatzono)
     %   - Throws error if true (A,B) not inside the estimated set.
 
     % Center of (X_1 - W)
-    X1W_cen = X_1T - Wmatzono.center;
+    X1W_cen = X_1T - WmatZ.center;
 
     % Matrix zonotope: X_1 - W ∈ AB * [X_0T; U_full]
-    M_ab = matZonotope(X1W_cen, Wmatzono.generator) * pinv([X_0T; U_full]);
+    M_ab = matZonotope(X1W_cen, WmatZ.G) * pinv([X_0T; U_full]);
 
     % Interval matrix over (A,B)
     intAB = intervalMatrix(M_ab);

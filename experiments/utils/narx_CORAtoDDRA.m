@@ -1,4 +1,4 @@
-function [x_all, utraj_all] = aux_CORAtoDDRA(testSuite, sys)
+function [x_all, utraj_all] = narx_CORAtoDDRA(testSuite, sys)
 % AUX_CORATODDRA Convert CORA testSuite to DDRA flat data for nonlinearARX
 % Assumes y = x (full observability) and sys is nonlinearARX
 

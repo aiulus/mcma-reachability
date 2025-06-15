@@ -5,7 +5,9 @@ function [U_full, X_0T, X_1T] = ...
     %n = size(sys.A, 1); m = size(sys.B, 2);
 
     % For CORA loadDynamics() objects
+    % x = x.';
     n = sys.nrOfOutputs; m = sys.nrOfInputs;
+    %n = sys.dims.n; m = sys.dims.m;
     totalsamples = initpoints*T;
 
     % Preallocate matrices

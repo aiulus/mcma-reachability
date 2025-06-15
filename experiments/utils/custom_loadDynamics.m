@@ -62,14 +62,18 @@ switch dynamics
         n = params.dim;
         A = eye(n) + 1.01 * diag(ones(n-1,1), 1);
         B = ones(n, 1);
+        C = eye(n);
+        D = 0;
 
-        f = @(y, u) A * y + B .* u;
+        %f = @(y, u) A * y + B .* u;
+        %f = @(y, u) A * y(:,1) + B .* u(:,1);  
         dt = 0.1;
         dim_y = n;
         dim_u = 1;
         %% TODO: Not sure what this is used for
         p_dim = 1;
-        sys = nonlinearARX('customNARX', f, dt, dim_y, dim_u, p_dim);
+        %sys = nonlinearARX('customNARX', f, dt, dim_y, dim_u, p_dim);
+        sys = linearSysDT(A, B, [], C, D, dt);
 
         % Initial state set R0
         c_R0 = zeros(dim_y * p_dim, 1);

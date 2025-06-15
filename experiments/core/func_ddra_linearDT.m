@@ -22,7 +22,7 @@ n = sys.dims.n;
 initpoints = 1; % #trajectories
 steps = 120; % #time steps
 
-X0_center = ones(n,1); X0_spread = 0.1;
+X0_center = 1; X0_spread = 0.1;
 U_center = 10; U_spread = 0.25;
 W_center = 0; W_spread = 0.005 * scale_noise;
 
