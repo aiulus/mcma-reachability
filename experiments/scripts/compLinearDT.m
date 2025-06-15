@@ -50,9 +50,9 @@ sysparams.dim = dim;
 %               configuration files. 
 cfg = getConfig();
 settings = cfg.settings;
-settings.n_s = 1;
-settings.n_s_train = 1;
-settings.n_s_val = 1;
+%settings.n_s = 1;
+%settings.n_s_train = 1;
+%settings.n_s_val = 1;
 %params = struct('R0', R0, 'U', U);
 %initpoints = 5; % #(distinct trajectories to simulate)
 %T = 120; % length of each trajectory
@@ -63,7 +63,12 @@ T_k =settings.n_k_train;
 testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
 testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
 testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
-testSuites = struct('testSuite', testSuite, 'testSuite_train', testSuite_train, 'testSuite_val', testSuite_val);
+
+testSuites = cell(3,1);
+testSuites{1} = testSuite;
+testSuites{2} = testSuite_train;
+testSuites{3} = testSuite_val;
+
 % union_testSuites - Custom function. Builds the union of multiple
 %                    testSuite objects. 
 %complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
@@ -108,7 +113,7 @@ end
 %% 3 - Run the Conformance Checking pipeline
 % Pass any relevant parameters to flexBlackBoxConform
 sysparams.cfg = cfg;
-%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 
 % Temporarily disabling dataset passing
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);

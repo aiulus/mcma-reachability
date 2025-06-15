@@ -108,9 +108,9 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
         %params_true.testSuite = TS_in();        
         %params_true.testSuite_train = TS_in(1:Mtrain);
         %params_true.testSuite_val = TS_in(Mtrain+1:Mtrain + Mval);
-        params_true.testSuite = TS_in.testSuite;
-        params_true.testSuite_train = TS_in.testSuite_train;
-        params_true.testSuite_val = TS_in.testSuite_val;
+        params_true.testSuite = TS_in{1};
+        params_true.testSuite_train = TS_in{2};
+        params_true.testSuite_val = TS_in{3};
     end
 
     %% Conformance Identification ---------------------------------------------
