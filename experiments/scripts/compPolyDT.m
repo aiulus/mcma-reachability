@@ -77,7 +77,7 @@ WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,1));
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
 %                   Alanwar et.al.
-M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_0T, WmatZ);
+M_ab = estimate_AB_poly(X_0T, X_1T, U_0T, WmatZ);
 
 totalsteps = 10; % #(identification steps after identification)
 
