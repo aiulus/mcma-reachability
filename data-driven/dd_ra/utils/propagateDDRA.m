@@ -26,7 +26,13 @@ function [X_model, X_data] = propagateDDRA(X0, U, W, sys, M_ab, totalsteps)
         % Reduce for computational efficiency (model-based)
         X_model{i} = reduce(X_model{i}, 'girard', 400);
         if isa(sys, 'nonlinearARX')
-            X_model{i+1} = sys.mFile(X_model{i}, U) + W;
+            % obj,params,options,varargin
+            params = struct('R0', X0, 'U', U);
+            options = struct( ...
+                'tStart', 0, ...
+                'tFinal', 10 ...
+                );
+            X_model{i+1} = reach_DT(X_model{i}, params, options);
         else
             X_model{i+1} = sys.A * X_model{i} + sys.B * U + W;
         end

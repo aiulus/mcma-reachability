@@ -47,6 +47,6 @@ function [X_0T, X_1T, U_0T, U_1T] = shift_trajs(testSuite)
     end
 
     % Return transposed: T × n format
-    x_all = x_all.';
-    utraj_all = utraj_all.';
+    x_all = x_all;
+    utraj_all = utraj_all;
 end

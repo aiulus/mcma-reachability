@@ -19,7 +19,7 @@ clear; clc;
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'mockSys'; 
+systype = 'lipschitzSysDT'; 
 %systype = 'polyNARX';
 dim = 4;
 dt = 0.1;
@@ -57,12 +57,12 @@ settings = cfg.settings;
 %initpoints = 5; % #(distinct trajectories to simulate)
 %T = 120; % length of each trajectory
 k = settings.n_m_train;
-T_k = settings.n_k_train;
+T_k =settings.n_k_train;
 
 % createTestSuite - CORA fuction
-testSuite = custom_createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
-testSuite_train = custom_createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
-testSuite_val = custom_createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
+testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
+testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
 
 testSuites = cell(3,1);
 testSuites{1} = testSuite;
@@ -79,8 +79,7 @@ testSuites{3} = testSuite_val;
 % aux_CORAtoDDRA - Custom function that converts testSuite objects to data
 %                  representation format that the DDRA pipeline expects
 %[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite, sys);
-%[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
-[x_all, utraj_all] = lsdt_CORAtoDDRA(testSuite_train);
+[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
 
 %% 2 - Run the DDRA pipeline
 % getTrajsDDRA - Custom function. Takes single-trajectory data and creates
@@ -97,13 +96,49 @@ WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,1));
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
 %                   Alanwar et.al.
-M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_0T, WmatZ);
+%M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_0T, WmatZ);
 
-totalsteps = 10; % #(identification steps after identification)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lookup = struct( ...
+    'fun', sys.mFile, ...
+    'U', params.U, ...
+    'R0', params.R0, ...
+    'n', sys.nrOfOutputs, ...
+    'tensorOrder', cfg.options_reach.tensorOrder ...
+    );
+stepsLip = 1;
+initpointsLip = 50;
+[gamma,L] = compLipConst(lookup.fun, lookup.U, lookup.R0, stepsLip, initpointsLip, lookup.n);
+eps(1) = L(1) .* gamma(1)/2;
+eps(2) = L(2) .* gamma(2)/2;
+lookup.Zeps = zonotope([zeros(2,1),diag(eps)]);
+lookup.ZepsFlag = 1;
+
+%% Define the discrete system 
+options = struct( ...
+                'R0', params.R0, ...
+                'U', params.U, ...
+                'tStart', 0, ...
+                'tFinal', 10, ...
+                'zonotopeOrder', cfg.options_reach.zonotopeOrder, ...
+                'tensorOrder', cfg.options_reach.tensorOrder ...
+                );
+
+[X_model_P2 ,X_data_P2]= reach_DT(sys, params, options);
+tComp = toc;
+
+if lookup.ZepsFlag
+    for i = 1:NN
+        X_data_P2.timePoint.set{i} = X_data_P2.timePoint.set{i} + lookup.Zeps;
+    end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%totalsteps = 10; % #(identification steps after identification)
 
 % propagateDDRA - Custom function. Uses the previously computed
 %                 $\mathcal{M}_{AB}$ to compute the reachable sets. 
-[X_model_P2, X_data_P2] = propagateDDRA(params.R0, params.U, W, sys, M_ab, totalsteps);
+%[X_model_P2, X_data_P2] = propagateDDRA(params.R0, params.U, W, sys, M_ab, totalsteps);
 
 % Visualize
 if plot_toggle.ddra

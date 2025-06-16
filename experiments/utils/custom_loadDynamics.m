@@ -190,58 +190,95 @@ switch dynamics
         end
         U = zonotope([c_U, G_U]);
 
+    % Modified version of lipschitzNARX using nonlinearSysDT
+    case "lipschitzSysDT"
+        % Lipschitz-continuous system redefined as nonlinearSysDT
+        p_true = [0.6, -1.2]';
+    
+        % Define system dynamics function f(x,u)
+        f = @(x,u) [p_true(1) * tanh(x(1,1)) + 0.1 * log(1 + abs(x(2,1))) + u(1,1);
+                    p_true(2) * tanh(x(2,1)) + 0.05 * x(1,1) + u(2,1)];      
+    
+        dt = 0.1;
+        dim_x = 2;
+        dim_u = 2;
+        dim_y = 2;
+        %out_fun = @(x,u) x; % Fully observable system
+        out_fun = @(x,u) [x(1); x(2)];
+
+        sys = nonlinearSysDT('lipschitzSysDT', f, dt, dim_x, dim_u, out_fun, dim_y);
+
+        % Initial state
+        c_R0 = zeros(dim_x, 1);
+        G_R0 = 0.05 * eye(dim_x);
+        R0 = zonotope([c_R0, G_R0]);
+    
+        % Input uncertainty
+        switch type
+            case "rand"
+                c_U = randn(dim_u,1);
+                G_U = rand(dim_u, dim_u);
+            case "diag"
+                c_U = 0.1 * randn(dim_u,1);
+                G_U = diag(0.1 * rand(dim_u,1));
+            case "standard"
+                c_U = zeros(dim_u,1);
+                G_U = 0.2 * eye(dim_u);
+        end
+        U = zonotope([c_U, G_U]);
+
     case "chain_of_integrators"
-    % Chain-of-integrators linear discrete-time model
-    % We take 'dim' from the third argument 'params'
-    p_true = [];
-    if nargin < 3
-        n = x_dim;
-    else
-        n = 4;
-    end 
-    A  = diag(ones(n-1,1),1);
-    B  = zeros(n,1); B(end)=1;
-    C  = eye(n);
-    D  = zeros(n,1);
-    dt = 0.05;  
-
-    sys = linearSysDT(A,B,[],C,D,dt);
-
-    % create uncertainty sets
-    dim_x = size(A, 1);
-    dim_u = size(B, 2);
-    dim_v = size(C, 1);
-    switch type
-        case "rand"
-            c_R0 = [-0.76; -9.68; 0.21; -5.42];
-            c_U = [-0.16; -8.93];
-            c_V = [1.48; -7.06];
-            G_R0 = [-0.02 0.13 0.10 0.06
-                0.30 -0.24  0.21 -0.16
-                0.28  0.14  0.15  0.18
-                0.28  0.33 -0.06 -0.23];
-            G_U = [0.07   -0.25
-                -0.28   -0.11];
-            G_V = [-0.08    0.01
-                -0.00   -0.03];
-        case "diag"
-            c_R0 = 0.1*[-0.76; -9.68; 0.21; -5.42];
-            c_U = 0.1*[-0.16; -8.93];
-            c_V = 0.1*[1.48; -7.06];
-            G_R0 = diag([0.22 0.13 0.10 0.06]);
-            G_U = diag([0.07 0.25]);
-            G_V = diag([0.08 0.01]);
-        case "standard"
-            c_R0 = zeros(dim_x,1);
-            G_R0 = [];
-            c_U = 0.1+zeros(dim_u,1);
-            G_U = 0.2*diag(ones(dim_u,1));
-            c_V =  -0.05+zeros(dim_v,1);
-            G_V = 0.1*[diag(ones(dim_v,1)) ones(dim_v,1)];
-    end
-    R0 = zonotope([c_R0,G_R0]);
-    V = zonotope([c_V,G_V]);
-    U = cartProd(zonotope([c_U,G_U]), V);
+        % Chain-of-integrators linear discrete-time model
+        % We take 'dim' from the third argument 'params'
+        p_true = [];
+        if nargin < 3
+            n = x_dim;
+        else
+            n = 4;
+        end 
+        A  = diag(ones(n-1,1),1);
+        B  = zeros(n,1); B(end)=1;
+        C  = eye(n);
+        D  = zeros(n,1);
+        dt = 0.05;  
+    
+        sys = linearSysDT(A,B,[],C,D,dt);
+    
+        % create uncertainty sets
+        dim_x = size(A, 1);
+        dim_u = size(B, 2);
+        dim_v = size(C, 1);
+        switch type
+            case "rand"
+                c_R0 = [-0.76; -9.68; 0.21; -5.42];
+                c_U = [-0.16; -8.93];
+                c_V = [1.48; -7.06];
+                G_R0 = [-0.02 0.13 0.10 0.06
+                    0.30 -0.24  0.21 -0.16
+                    0.28  0.14  0.15  0.18
+                    0.28  0.33 -0.06 -0.23];
+                G_U = [0.07   -0.25
+                    -0.28   -0.11];
+                G_V = [-0.08    0.01
+                    -0.00   -0.03];
+            case "diag"
+                c_R0 = 0.1*[-0.76; -9.68; 0.21; -5.42];
+                c_U = 0.1*[-0.16; -8.93];
+                c_V = 0.1*[1.48; -7.06];
+                G_R0 = diag([0.22 0.13 0.10 0.06]);
+                G_U = diag([0.07 0.25]);
+                G_V = diag([0.08 0.01]);
+            case "standard"
+                c_R0 = zeros(dim_x,1);
+                G_R0 = [];
+                c_U = 0.1+zeros(dim_u,1);
+                G_U = 0.2*diag(ones(dim_u,1));
+                c_V =  -0.05+zeros(dim_v,1);
+                G_V = 0.1*[diag(ones(dim_v,1)) ones(dim_v,1)];
+        end
+        R0 = zonotope([c_R0,G_R0]);
+        V = zonotope([c_V,G_V]);
+        U = cartProd(zonotope([c_U,G_U]), V);
     
     case "pedestrian"
         % pedestrian model as a state-space model [1]

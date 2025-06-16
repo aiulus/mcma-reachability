@@ -19,8 +19,8 @@ clear; clc;
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'mockSys'; 
-%systype = 'polyNARX';
+%systype = 'mockSys'; 
+systype = 'polyNARX';
 dim = 4;
 dt = 0.1;
 
@@ -37,12 +37,6 @@ sysparams.dim = dim;
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
 % uses uncertainty set specifications in loadDynamics, option "standard"
 
-% initialSetupDDRA - just sets the uncertainty sets
-%[~, ~, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
-%                                       0, 0, ...   % X0_center & X0_spread
-%                                       0.1, 0.2, ...   % U_center & U_spread
-%                                       -0.05, 0.1);  % W_center & W_spread
-
 % Create the datasets
 % getConfig() - Custom function. Sets hyperparameters such as the number of 
 %               distinct trajectories in the testSuite, length of the
@@ -50,37 +44,25 @@ sysparams.dim = dim;
 %               configuration files. 
 cfg = getConfig();
 settings = cfg.settings;
-%settings.n_s = 1;
-%settings.n_s_train = 1;
-%settings.n_s_val = 1;
-%params = struct('R0', R0, 'U', U);
-%initpoints = 5; % #(distinct trajectories to simulate)
-%T = 120; % length of each trajectory
 k = settings.n_m_train;
 T_k = settings.n_k_train;
 
 % createTestSuite - CORA fuction
-testSuite = custom_createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
-testSuite_train = custom_createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
-testSuite_val = custom_createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
+testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
+testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
 
 testSuites = cell(3,1);
 testSuites{1} = testSuite;
 testSuites{2} = testSuite_train;
 testSuites{3} = testSuite_val;
 
-% union_testSuites - Custom function. Builds the union of multiple
-%                    testSuite objects. 
-%complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
-
 %% ACHTUNG!!-- aux_CORAtoDDRA currently propagates X0 with (A, B, C, D)
 %%          -- only use systems with n=p in the future!
 
 % aux_CORAtoDDRA - Custom function that converts testSuite objects to data
 %                  representation format that the DDRA pipeline expects
-%[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite, sys);
-%[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
-[x_all, utraj_all] = lsdt_CORAtoDDRA(testSuite_train);
+[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
 
 %% 2 - Run the DDRA pipeline
 % getTrajsDDRA - Custom function. Takes single-trajectory data and creates
@@ -90,8 +72,6 @@ testSuites{3} = testSuite_val;
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; 
 W = zonotope(zeros(sys.nrOfOutputs, 1), 0*eye(sys.nrOfOutputs, size(X_1T, 2)));
-%WmatZ = zonotope(zeros(sys.nrOfOutputs, 1), 0.01*eye(sys.nrOfOutputs, size(X_1T, 2)));
-%WmatZ = matZonotope(zeros(sys.nrOfOutputs, (size(X_1T, 2))), {zeros(sys.nrOfOutputs, size(X_1T, 2))});
 WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,1));
 
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
@@ -117,6 +97,3 @@ end
 % Pass any relevant parameters to flexBlackBoxConform
 sysparams.cfg = cfg;
 [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
-
-% Temporarily disabling dataset passing
-%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);
