@@ -138,6 +138,7 @@ switch dynamics
         dim_u = 2;
         p_dim = 1;
         sys = nonlinearARX('polyNARX', f, dt, dim_y, dim_u, p_dim);
+        %sys = nonlinearSysDT('polyNARX', f, dt, dim_y, dim_u, p_dim);
 
         % Initial state
         c_R0 = zeros(dim_y * p_dim, 1);

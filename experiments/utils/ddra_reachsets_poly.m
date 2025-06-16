@@ -33,15 +33,26 @@ function X_data = ddra_reachsets_poly(AB, params, options)
             x2 * u1               % Cross term x2*u1
         ];
         
-        % Construct the zonotope
-        %cardint = zonotope(features);
+        % Construct the zonotope   
+        %cardint = zonotope(cardint);
+        % Initialize center and generator matrix
+        dim = length(features);
+        center = zeros(dim, 1);
+        G = zeros(dim, dim);  % One generator per dimension
         
-        %% TODO: Fix zonotope construction
-        cardint = zonotope([c, G]);       
-
+        for k = 1:dim
+            intv = features(k);  % extract interval
+            lb = min(intv);      % lower bound
+            ub = max(intv);      % upper bound
+            center(k) = (lb + ub) / 2;
+            G(k, k) = (ub - lb) / 2;  % single generator per dimension
+        end
+        
+        % Construct the zonotope
+        cardint = zonotope(center, G);
     
-        X_data{i+1} =AB *cardint + options.W;
-        X_data{i+1,1}=reduce(X_data{i+1,1},'girard',options.zonotopeOrder);
+        X_data{i+1} = AB *cardint + options.W;
+        X_data{i+1,1} = reduce(X_data{i+1,1},'girard',options.zonotopeOrder);
     end
     % Reachability Analysis ---------------------------------------------------
     
