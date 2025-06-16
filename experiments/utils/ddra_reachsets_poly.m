@@ -7,7 +7,8 @@ function X_data = ddra_reachsets_poly(AB, params, options)
     X_data = cell(N+1,1);
     X_data{1} = params.R0;
 
-    for i = 1:N    
+    for i = 1:N-1    
+        fprintf('Computing step %d / %d of reachset propagation...\n', i, N-1);
         % monomial of intervals of reachable sets and input
         X_z1 = interval(X_data{i});
         U_int = interval(params.U);
