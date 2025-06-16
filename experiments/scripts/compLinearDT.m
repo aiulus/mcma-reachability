@@ -79,22 +79,22 @@ testSuites{3} = testSuite_val;
 % aux_CORAtoDDRA - Custom function that converts testSuite objects to data
 %                  representation format that the DDRA pipeline expects
 %[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite, sys);
-[x_all, utraj_all] = lsdt_CORAtoDDRA(testSuite_train);
+[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
 
 %% 2 - Run the DDRA pipeline
 % getTrajsDDRA - Custom function. Takes single-trajectory data and creates
 %                the time-shifted objects X_-, X_+ etc.
-[X_0T, X_1T, U_plus] = shift_trajs(T_k, x_all, utraj_all);
+[X_0T, X_1T, U_0T, U_1T] = shift_trajs(testSuite_train);
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; 
-W = zonotope(zeros(sys.nrOfStates, 1), 0*eye(sys.nrOfStates, size(X_1T, 2)));
-WmatZ = zonotope(zeros(sys.nrOfStates, 1), 0.01*eye(sys.nrOfStates, size(X_1T, 2)));
+W = zonotope(zeros(sys.nrOfOutputs, 1), 0*eye(sys.nrOfOutputs, size(X_1T, 2)));
+WmatZ = zonotope(zeros(sys.nrOfOutputs, 1), 0.01*eye(sys.nrOfOutputs, size(X_1T, 2)));
 
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
 %                   Alanwar et.al.
-M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_plus, WmatZ);
+M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_0T, WmatZ);
 
 totalsteps = 10; % #(identification steps after identification)
 

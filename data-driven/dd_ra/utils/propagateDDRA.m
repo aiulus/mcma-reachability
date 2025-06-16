@@ -1,4 +1,4 @@
-function [X_model, X_data] = propagateDDRA(X0, U, W, sys_d, M_ab, totalsteps)
+function [X_model, X_data] = propagateDDRA(X0, U, W, sys, M_ab, totalsteps)
     % propagateDDRA: Propagates reachable sets using model-based and data-driven methods.
     %
     % Inputs:
@@ -25,7 +25,11 @@ function [X_model, X_data] = propagateDDRA(X0, U, W, sys_d, M_ab, totalsteps)
         fprintf('Computing step %d / %d of reachset propagation...\n', i, totalsteps);
         % Reduce for computational efficiency (model-based)
         X_model{i} = reduce(X_model{i}, 'girard', 400);
-        X_model{i+1} = sys_d.A * X_model{i} + sys_d.B * U + W;
+        if isa(sys, 'nonlinearARX')
+            X_model{i+1} = sys.mFile(X_model{i}, U) + W;
+        else
+            X_model{i+1} = sys.A * X_model{i} + sys.B * U + W;
+        end
 
         % Reduce for computational efficiency (data-driven)
         X_data{i} = reduce(X_data{i}, 'girard', 400);

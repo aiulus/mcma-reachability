@@ -1,21 +1,52 @@
-function [X_minus, X_plus, U_plus] = shift_trajs(T_k, x, utraj)
-    n = size(x, 1); m = size(utraj, 1);
-    totalsamples = size(x, 2);
-    c = totalsamples / T_k;
-    totalsamples = c * (T_k - 1);
-    
-    X_minus = zeros(n, totalsamples);     
-    X_plus = zeros(n, totalsamples);
-    U_plus = zeros(m, totalsamples);
+function [X_0T, X_1T, U_0T, U_1T] = shift_trajs(testSuite)
+% narx_CORAtoDDRA - Convert CORA testSuite to DDRA-compatible flat data format.
+% Assumes y = x (full observability) and sys is a NARX system with .mFile handle
 
-    for j=1:c
-        lower = 1 + (j - 1)*(T_k - 1);
-        upper = j * (T_k - 1);
-        minus_lower = (j - 1) * T_k + 1; minus_upper = (j - 1) * T_k + (T_k - 1);
-        plus_lower = (j - 1) * T_k + 2; plus_upper = j * T_k;
-        X_minus(:, lower:upper) = x(:, minus_lower:minus_upper);
-        X_plus(:, lower:upper) = x(:, plus_lower:plus_upper);
-        U_plus(:, lower:upper) = utraj(:, plus_lower:plus_upper);
+    %assert(isfield(sys, 'mFile') && isa(sys.mFile, 'function_handle'), ...
+    %    'Expected sys to contain a function handle field "mFile".');
+
+    K = numel(testSuite); % # distinct input sequences in the ensemble
+    dim_y = size(testSuite{1}.y, 2);
+    dim_u = size(testSuite{1}.u, 2);
+
+    % s - #random samples per unique input sequence
+    % T_k - trajectory length
+    [T_k, ~, s] = size(testSuite{1}.u);
+    totalTraj = K * s;
+
+    x_all = zeros(dim_y, totalTraj);
+    utraj_all = zeros(dim_u, totalTraj);
+
+    X_0T = zeros(dim_y, totalTraj);
+    X_1T = zeros(dim_y, totalTraj);
+    U_0T = zeros(dim_u, totalTraj);
+    U_1T = zeros(dim_u, totalTraj);
+
+    for i = 1:K
+        tc = testSuite{i};
+        y_i = tc.y; % $\in (T_k \times n)$
+        u_i = tc.u.'; % $\in (T_k \times m)$  
+        u_i_plus = u_i(:, 2:end);
+        u_i_minus = u_i(:, 1:(end-1));
+
+        for j = 1:s
+            lb = (s+i-1)*T_k+1;
+            ub = (s+i)*T_k;
+            lb_minus_one = (s+i-1)*(T_k - 1)+1;
+            ub_minus_one = (s+i)*(T_k - 1);
+            utraj_all(:, lb:ub) = u_i;
+            y_ij = squeeze(y_i(:, :, j)).'; % \in (T_k \times n)
+            y_ij_plus = y_ij(:, 2:end);
+            y_ij_minus = y_ij(:, 1:(end-1));
+            x_all(:, lb:ub) = y_ij;
+            X_0T(:, lb_minus_one:ub_minus_one) = y_ij_minus;
+            X_1T(:, lb_minus_one:ub_minus_one) = y_ij_plus;
+            U_0T(:, lb_minus_one:ub_minus_one) = u_i_minus;
+            U_1T(:, lb_minus_one:ub_minus_one) = u_i_plus;
+        end
     end
-end
 
+    % Return transposed: T × n format
+    x_all = x_all.';
+    utraj_all = utraj_all.';
+end
