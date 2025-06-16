@@ -19,7 +19,7 @@ clear; clc;
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'mockSys'; 
+systype = 'lipschitzNARX'; 
 %systype = 'polyNARX';
 dim = 4;
 dt = 0.1;

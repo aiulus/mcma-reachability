@@ -1,4 +1,4 @@
-function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, params)
+function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, x_dim)
 % loadDynamics - load system dynamics and uncertainty sets
 %
 % Syntax:
@@ -57,9 +57,10 @@ switch dynamics
     case "mockSys"
         p_true = [];
         if nargin < 3
-            params = p_true;
+            n = x_dim;
+        else
+            n = 4;
         end
-        n = params.dim;
         A = eye(n) + 1.01 * diag(ones(n-1,1), 1);
         B = ones(n, 1);
         C = eye(n);
@@ -97,13 +98,10 @@ switch dynamics
     case "example_NARX"
         % Custom NARX with full observability x = y + ε
         p_true = [1.0, -0.5]'; % example parameters
-        if nargin < 3
-            params = p_true;
-        end
 
         % Nonlinear ARX update function
-        f = @(y,u) [params(1) * tanh(y(1,1)) + u(1,1);
-                    params(2) * sin(y(2,1)) + u(2,1)];
+        f = @(y,u) [p_true(1) * tanh(y(1,1)) + u(1,1);
+                    p_true(2) * sin(y(2,1)) + u(2,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
@@ -131,13 +129,10 @@ switch dynamics
     case "polyNARX"
         % Polynomial NARX system: x = y + ε
         p_true = [1.5, -0.8]';
-        if nargin < 3
-            params = p_true;
-        end
 
         % Polynomial update: quadratic nonlinearity
-        f = @(y,u) [params(1) * y(1,1)^2 + u(1,1);
-                    params(2) * y(2,1)^2 + u(2,1)];
+        f = @(y,u) [p_true(1) * y(1,1)^2 + u(1,1);
+                    p_true(2) * y(2,1)^2 + u(2,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
@@ -166,13 +161,10 @@ switch dynamics
     case "lipschitzNARX"
         % Lipschitz-continuous NARX system: x = y + ε
         p_true = [0.6, -1.2]';
-        if nargin < 3
-            params = p_true;
-        end
 
         % Smooth update: bounded slope with tanh, logs
-        f = @(y,u) [params(1) * tanh(y(1,1)) + 0.1 * log(1 + abs(y(2,1))) + u(1,1);
-                    params(2) * tanh(y(2,1)) + 0.05 * y(1,1) + u(2,1)];
+        f = @(y,u) [p_true(1) * tanh(y(1,1)) + 0.1 * log(1 + abs(y(2,1))) + u(1,1);
+                    p_true(2) * tanh(y(2,1)) + 0.05 * y(1,1) + u(2,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
@@ -180,8 +172,8 @@ switch dynamics
         sys = nonlinearARX('lipschitzNARX', f, dt, dim_y, dim_u, p_dim);
 
         % Initial state
-        c_R0 = zeros(dim_y * p_dim, 1);
-        G_R0 = 0.05 * eye(dim_y * p_dim);
+        c_R0 = zeros(dim_y, 1);
+        G_R0 = 0.05 * eye(dim_y);
         R0 = zonotope([c_R0, G_R0]);
 
         % Input uncertainty
@@ -202,7 +194,11 @@ switch dynamics
     % Chain-of-integrators linear discrete-time model
     % We take 'dim' from the third argument 'params'
     p_true = [];
-    n  = params;  
+    if nargin < 3
+        n = x_dim;
+    else
+        n = 4;
+    end 
     A  = diag(ones(n-1,1),1);
     B  = zeros(n,1); B(end)=1;
     C  = eye(n);
@@ -249,15 +245,15 @@ switch dynamics
     
     case "pedestrian"
         % pedestrian model as a state-space model [1]
-        params = [1 0.01 5e-5 0.01]'; p_true = params;        
-        A = [params(1)	0	    params(2)	0
-            0	    params(1)	0	    params(2)
-            0	    0	    params(1)	0
-            0	    0	    0	    params(1)];
-        B =[params(3)    0       0       0
-            0	    params(3)    0       0
-            params(4)    0       0       0
-            0	    params(4)    0       0];
+        sysparams = [1 0.01 5e-5 0.01]'; p_true = sysparams;        
+        A = [sysparams(1)	0	    sysparams(2)	0
+            0	    sysparams(1)	0	    sysparams(2)
+            0	    0	    sysparams(1)	0
+            0	    0	    0	    sysparams(1)];
+        B =[sysparams(3)    0       0       0
+            0	    sysparams(3)    0       0
+            sysparams(4)    0       0       0
+            0	    sysparams(4)    0       0];
         C =[1	    0	    0	    0
             0	    1	    0	    0];
         D =[0	    0       1       0
@@ -306,18 +302,18 @@ switch dynamics
         % pedestrian model as an ARX model [1]
         p_true = [2 -1 5e-5 -2]';
         if nargin < 3
-            params = p_true;
+            sysparams = p_true;
         end
-        A{1,1} = [  params(1)	0	    
-                    0	    params(1)];
-        A{2,1} = [  params(2)	0	    
-                    0	    params(2)];
+        A{1,1} = [  sysparams(1)	0	    
+                    0	    sysparams(1)];
+        A{2,1} = [  sysparams(2)	0	    
+                    0	    sysparams(2)];
         B{1,1} = [  0	    0       1       0
                     0	    0       0       1];
-        B{2,1} = [  params(3)    0       params(4)    0
-                    0	    params(3)    0       params(4)];
-        B{3,1} = [  params(3)    0       1       0
-                    0	    params(3)    0       1];
+        B{2,1} = [  sysparams(3)    0       sysparams(4)    0
+                    0	    sysparams(3)    0       sysparams(4)];
+        B{3,1} = [  sysparams(3)    0       1       0
+                    0	    sysparams(3)    0       1];
         dt = 0.01;
         sys = linearARX(A, B, dt);
 
@@ -352,10 +348,10 @@ switch dynamics
         % Lorenz system [2]
         p_true = [10 28 8/3]';
         if nargin < 3
-            params = p_true;
+            sysparams = p_true;
         end
         dt = 0.01;
-        fun = @(x,u) aux_dynLorenz(x,u,dt,params);
+        fun = @(x,u) aux_dynLorenz(x,u,dt,sysparams);
         dim_x = 3;
         dim_u = 3;
         dim_y = 2;
@@ -392,10 +388,10 @@ switch dynamics
         % first two dimensions of the Lorenz system [2]
         p_true = [10 28]';
         if nargin < 3
-            params = p_true;
+            sysparams = p_true;
         end
         dt = 0.01;
-        fun = @(x,u) aux_dynLorenz2D(x,u,dt,params);
+        fun = @(x,u) aux_dynLorenz2D(x,u,dt,sysparams);
         dim_x = 2;
         dim_u = 2;
         dim_y = 2;
@@ -430,11 +426,11 @@ switch dynamics
         % artificial NARX model, adapted from [3]
         p_true = [0.8 1.2]';
         if nargin < 3
-            params = p_true;
+            sysparams = p_true;
         end
 
-        f = @(y,u) [y(1,1)/(1+y(2,1)^2) + params(1)*u(3,1); ...
-            (y(1,1) * y(2,1))/(1+y(2,1)^2)+ params(2)*u(6,1)];
+        f = @(y,u) [y(1,1)/(1+y(2,1)^2) + sysparams(1)*u(3,1); ...
+            (y(1,1) * y(2,1))/(1+y(2,1)^2)+ sysparams(2)*u(6,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
@@ -463,11 +459,11 @@ switch dynamics
         % artificial, simple NARX model
         p_true = [0.8 1.2]';
         if nargin < 3
-            params = p_true;
+            sysparams = p_true;
         end
 
-        f = @(y,u) [y(1,1)^2 + params(1)*u(3,1); ...
-            y(2,1)^2+params(2)*u(2,1)];
+        f = @(y,u) [y(1,1)^2 + sysparams(1)*u(3,1); ...
+            y(2,1)^2+sysparams(2)*u(2,1)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
