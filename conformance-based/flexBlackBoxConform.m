@@ -130,7 +130,10 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     c_R0 = center(params_true.R0);
     c_U = center(params_true.U);
     params_id_init = params_true;
-    params_id_init.R0 = zonotope(c_R0);
+    %params_id_init.R0 = zonotope(c_R0);
+    params_id_init.R0 = params_true.R0;
+    %% Debug statement
+    %params_id_init.R0 = zonotope(zeros(0, 1));
     params_id_init.U = zonotope([c_U eye(size(c_U, 1)) ones(size(c_U))]);
 
     % Identification ------------------------------------------------------

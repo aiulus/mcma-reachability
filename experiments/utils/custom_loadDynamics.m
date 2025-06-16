@@ -72,13 +72,13 @@ switch dynamics
         dim_y = n;
         dim_u = 1;
         %% TODO: Not sure what this is used for
-        p_dim = 1;
+        n_p = 1;
         %sys = nonlinearARX('customNARX', f, dt, dim_y, dim_u, p_dim);
         sys = linearSysDT(A, B, [], C, D, dt);
 
         % Initial state set R0
-        c_R0 = zeros(dim_y * p_dim, 1);
-        G_R0 = 0.05 * eye(dim_y * p_dim);
+        c_R0 = zeros(dim_y * n_p, 1);
+        G_R0 = 0.05 * eye(dim_y * n_p);
         R0 = zonotope([c_R0, G_R0]);
 
         % Input uncertainty
@@ -105,12 +105,12 @@ switch dynamics
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
-        p_dim = 1;
-        sys = nonlinearARX('customNARX', f, dt, dim_y, dim_u, p_dim);
+        n_p = 1;
+        sys = nonlinearARX('customNARX', f, dt, dim_y, dim_u, n_p);
 
         % Initial state set R0
-        c_R0 = zeros(dim_y * p_dim, 1);
-        G_R0 = 0.05 * eye(dim_y * p_dim);
+        c_R0 = zeros(dim_y * n_p, 1);
+        G_R0 = 0.05 * eye(dim_y * n_p);
         R0 = zonotope([c_R0, G_R0]);
 
         % Input uncertainty
@@ -133,16 +133,17 @@ switch dynamics
         % Polynomial update: quadratic nonlinearity
         f = @(y,u) [p_true(1) * y(1,1)^2 + u(1,1);
                     p_true(2) * y(2,1)^2 + u(2,1)];
+        g = @(y,u) [y(1); y(2)];
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
-        p_dim = 1;
-        sys = nonlinearARX('polyNARX', f, dt, dim_y, dim_u, p_dim);
-        %sys = nonlinearSysDT('polyNARX', f, dt, dim_y, dim_u, p_dim);
+        n_p = 1; % ARX parameter
+        %sys = nonlinearARX('polyNARX', f, dt, dim_y, dim_u, n_p);
+        sys = nonlinearSysDT('polyNARX', f, dt, dim_y, dim_u, g, dim_y);
 
         % Initial state
-        c_R0 = zeros(dim_y * p_dim, 1);
-        G_R0 = 0.05 * eye(dim_y * p_dim);
+        c_R0 = zeros(dim_y, 1);
+        G_R0 = 0.05 * eye(dim_y);
         R0 = zonotope([c_R0, G_R0]);
 
         % Input uncertainty
@@ -169,8 +170,8 @@ switch dynamics
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
-        p_dim = 1;
-        sys = nonlinearARX('lipschitzNARX', f, dt, dim_y, dim_u, p_dim);
+        n_p = 1;
+        sys = nonlinearARX('lipschitzNARX', f, dt, dim_y, dim_u, n_p);
 
         % Initial state
         c_R0 = zeros(dim_y, 1);
@@ -472,11 +473,11 @@ switch dynamics
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
-        p_dim = 2;
-        sys = nonlinearARX(dynamics,f,dt,dim_y, dim_u, p_dim);
+        n_p = 2;
+        sys = nonlinearARX(dynamics,f,dt,dim_y, dim_u, n_p);
 
         % initilization
-        R0 = zonotope(zeros(dim_y*p_dim,1));
+        R0 = zonotope(zeros(dim_y*n_p,1));
 
         % input
         switch type
@@ -505,11 +506,11 @@ switch dynamics
         dt = 0.1;
         dim_y = 2;
         dim_u = 2;
-        p_dim = 1;
-        sys = nonlinearARX(dynamics,f,dt,dim_y, dim_u, p_dim);
+        n_p = 1;
+        sys = nonlinearARX(dynamics,f,dt,dim_y, dim_u, n_p);
 
         % initilization
-        R0 = zonotope(zeros(dim_y*p_dim,1));
+        R0 = zonotope(zeros(dim_y*n_p,1));
 
         % input
         switch type
