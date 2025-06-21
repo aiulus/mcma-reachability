@@ -19,5 +19,7 @@ function options = getConformanceOptions(options_reach, cost_norm, constraints, 
     options.approx.save_res = false;
     %options.approx.p = sys.n_p;
     %options.approx.p = sys.nrOfOutputs;
-    options.approx.p = 0;
+    options.approx.p = 1;
+    options.approx.verbose = false;
+    options.approx.filename = 'temp_gp_results';
 end
