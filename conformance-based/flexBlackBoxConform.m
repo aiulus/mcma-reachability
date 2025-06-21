@@ -77,8 +77,6 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     sysparams = p.Results.sysparams;
     cfg = sysparams.cfg;
 
-    %% Load default config
-    %cfg = getConfig();
     settings = cfg.settings;
     options_reach = cfg.options_reach;
     options_testS.p_extr = 0.3;
@@ -89,18 +87,14 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     end    
     cost_norm = "interval"; % norm for the reachable set: "interval","frob"        
     constraints = "half"; % constraint type: "half", "gen"        
-    %methodsGray = ["blackGP","blackCGP"]; % identification approach    
-    methodsGray = "blackCGP";
+    methodsGray = ["blackGP","blackCGP"]; % identification approach    
+    %methodsGray = "blackCGP";
     methods = ["true" methodsGray];
 
     % Load system dynamics
     %[sys, params_true.R0, params_true.U, p_true] = loadDynamics(dynamics, "rand");
     [sys, params_true.R0, params_true.U, p_true] = custom_loadDynamics(dynamics, "rand", sysparams);
-    params_true.tFinal = sys.dt * settings.n_k - sys.dt;
-    % Debug statement
-    %c_R0 = zeros(sys.nrOfStates, 1);
-    %G_R0 = 0.05 * eye(sys.nrOfStates, options_reach.zonotopeOrder);
-    %params_true.R0 = zonotope([c_R0, G_R0]);     
+    params_true.tFinal = sys.dt * settings.n_k - sys.dt;     
 
     % Build test suites
     if isempty(TS_in)

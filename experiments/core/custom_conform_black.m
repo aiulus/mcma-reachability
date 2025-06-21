@@ -36,7 +36,7 @@ function sys_approx = custom_conform_black(params,options,type)
 
 % set default parameters and options
 sys = contDynamics();
-[params,options] = validateOptions(sys, params, options);
+%[params,options] = validateOptions(sys, params, options);
 
 % reformat training and validation data
 options.approx.p = 1;
