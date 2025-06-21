@@ -1,4 +1,4 @@
-function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, x_dim)
+function [sys, R0, U, p_true] = custom_loadDynamics(dynamics, type, sysparams)
 % loadDynamics - load system dynamics and uncertainty sets
 %
 % Syntax:
@@ -54,12 +54,63 @@ if nargin == 1
 end
 
 switch dynamics
+    case "mockSysARX"
+        % Auto-regressive (AR) version of the mock system
+        p_true = [];
+        if nargin < 3
+            n = 4; % Default dimension
+        else
+            n = sysparams.dim;
+        end
+
+        % Define the equivalent state-space matrices first for clarity
+        A_ss = eye(n) + 1.01 * diag(ones(n-1,1), 1);
+        B_ss = ones(n, 1);
+
+        % --- Convert to linearARX model with n_p = 1 ---
+        % The model is y(k) = A_bar{1}*y(k-1) + B_bar{1}*u(k) + B_bar{2}*u(k-1)
+        
+        n_p = 1; % Number of past time steps for the output
+        
+        A_bar{1} = A_ss; % Coefficient for y(k-1)
+        
+        % The B_bar cell array must have n_p + 1 elements
+        B_bar{1} = zeros(n, 1); % Coefficient for u(k) is zero
+        B_bar{2} = B_ss;        % Coefficient for u(k-1)
+        
+        dt = 0.1;
+        dim_y = n;
+        dim_u = 1;
+
+        % Create the linearARX system object
+        sys = linearARX(A_bar, B_bar, dt);
+        
+        % Initial state set R0
+        % For ARX, the state is the history of outputs: [y(k-1), ..., y(k-n_p)]'
+        % For n_p=1, the state dimension is dim_y * n_p = n * 1 = n
+        c_R0 = zeros(dim_y * n_p, 1);
+        G_R0 = 0.05 * eye(dim_y * n_p);
+        R0 = zonotope([c_R0, G_R0]);
+
+        % Input uncertainty
+        switch type
+            case "rand"
+                c_U = randn(dim_u,1);
+                G_U = rand(dim_u, dim_u);
+            case "diag"
+                c_U = 0.1 * randn(dim_u,1);
+                G_U = diag(0.1 * rand(dim_u,1));
+            case "standard"
+                c_U = zeros(dim_u,1);
+                G_U = 0.2 * eye(dim_u);
+        end
+        U = zonotope([c_U, G_U]);
     case "mockSys"
         p_true = [];
         if nargin < 3
-            n = x_dim;
+            n = 4; % Default dimension
         else
-            n = 4;
+            n = sysparams.dim;
         end
         A = eye(n) + 1.01 * diag(ones(n-1,1), 1);
         B = ones(n, 1);
@@ -82,7 +133,7 @@ switch dynamics
         R0 = zonotope([c_R0, G_R0]);
 
         % Input uncertainty
-        switch type
+        switch typeline
             case "rand"
                 c_U = randn(dim_u,1);
                 G_U = rand(dim_u, dim_u);
@@ -234,7 +285,7 @@ switch dynamics
         % We take 'dim' from the third argument 'params'
         p_true = [];
         if nargin < 3
-            n = x_dim;
+            n = sysparams;
         else
             n = 4;
         end 

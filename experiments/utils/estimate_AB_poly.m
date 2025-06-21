@@ -14,3 +14,4 @@ function AB = estimate_AB_poly(X_0T, X_1T, U_0T, WmatZ)
     % Temporarily setting noise to zero
     AB  = X_1T * pinv(data);
 end
+% ------------------------------ END OF CODE ------------------------------

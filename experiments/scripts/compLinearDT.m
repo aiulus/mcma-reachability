@@ -19,7 +19,7 @@ clear; clc;
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'mockSys'; 
+systype = 'mockSysARX'; 
 %systype = 'polyNARX';
 dim = 4;
 dt = 0.1;
@@ -60,9 +60,9 @@ k = settings.n_m_train;
 T_k = settings.n_k_train;
 
 % createTestSuite - CORA fuction
-testSuite = custom_createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
-testSuite_train = custom_createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
-testSuite_val = custom_createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
+testSuite = createTestSuite(sys, params, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
+testSuite_train = createTestSuite(sys, params, settings.n_k_train, settings.n_m_train, settings.n_s_train);
+testSuite_val = createTestSuite(sys, params, settings.n_k_val, settings.n_m_val, settings.n_s_val);
 
 testSuites = cell(3,1);
 testSuites{1} = testSuite;
@@ -80,30 +80,31 @@ testSuites{3} = testSuite_val;
 %                  representation format that the DDRA pipeline expects
 %[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite, sys);
 %[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
-[x_all, utraj_all] = lsdt_CORAtoDDRA(testSuite_train);
+[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
 
 %% 2 - Run the DDRA pipeline
 % getTrajsDDRA - Custom function. Takes single-trajectory data and creates
 %                the time-shifted objects X_-, X_+ etc.
-[X_0T, X_1T, U_0T, U_1T] = shift_trajs(testSuite_train);
+[X_0T, X_1T, U_0T, U_1T, U_full] = shift_trajs(testSuite_train);
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; 
 W = zonotope(zeros(sys.nrOfOutputs, 1), 0*eye(sys.nrOfOutputs, size(X_1T, 2)));
 %WmatZ = zonotope(zeros(sys.nrOfOutputs, 1), 0.01*eye(sys.nrOfOutputs, size(X_1T, 2)));
 %WmatZ = matZonotope(zeros(sys.nrOfOutputs, (size(X_1T, 2))), {zeros(sys.nrOfOutputs, size(X_1T, 2))});
-WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,1));
+%WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,1));
 
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
 %                   Alanwar et.al.
+WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,size(X_1T, 2)));
 M_ab = estimateAB_ddra(sys, X_0T, X_1T, U_0T, WmatZ);
 
-totalsteps = 10; % #(identification steps after identification)
+totalsteps = settings.n_k_train; % #(identification steps after identification)
 
 % propagateDDRA - Custom function. Uses the previously computed
 %                 $\mathcal{M}_{AB}$ to compute the reachable sets. 
-[X_model_P2, X_data_P2] = propagateDDRA(params.R0, params.U, W, sys, M_ab, totalsteps);
+[X_model_P2, X_data_P2] = propagateDDRA(U_full, X_0T, X_1T, params.R0, params.U, W, sys, M_ab, totalsteps);
 
 % Visualize
 if plot_toggle.ddra
