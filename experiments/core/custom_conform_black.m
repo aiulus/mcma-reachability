@@ -1,4 +1,4 @@
-function sys_approx = custom_conform_black(params,options,type)
+function sys_approx = conform_black(params,options,type)
 % conform_black - identify a black-box model with genetic programming
 %
 % Syntax:
@@ -36,10 +36,9 @@ function sys_approx = custom_conform_black(params,options,type)
 
 % set default parameters and options
 sys = contDynamics();
-%[params,options] = validateOptions(sys, params, options);
+[params,options] = validateOptions(sys, params, options);
 
 % reformat training and validation data
-options.approx.p = 1;
 [xtrain,ytrain] = aux_testSuite2regress(params.testSuite_train, options.approx.p);
 [xval,yval] = aux_testSuite2regress(params.testSuite_val, options.approx.p);
 
@@ -148,61 +147,38 @@ end
 
 
 function [x,y] = aux_testSuite2regress(testSuite, p)
-% Corrected aux_testSuite2regress function
-% x = [y_1(k-p) ... y_n(k-p) ... y_1(k-1) ... y_n(k-1) ...
-%      u_1(k-p) ... u_n(k-p) ... u_1(k) ... u_n(k)]
+% x = [y_1(k-p) y_2(k-p) ... y_n(k-p) y_1(k-1) y_2(k-1) ... y_n(k-1) ...
+%      u_1(k-p) u_2(k-p) ... u_n(k-p) u_1(k) u_2(k) ... u_n(k)]
 
-if isempty(testSuite)
-    x = [];
-    y = [];
-    return;
-end
-
-% Extract dimensions from the first test case
-y_first = testSuite{1}.y;
-u_first = testSuite{1}.u;
-dim_y = size(y_first, 2);
-dim_u = size(u_first, 2);
-n_k_first = size(y_first,1);
-n_s_first = size(y_first,3);
-
-% Calculate expected number of features and total size
-n_features = dim_y*p + dim_u*(p+1);
-total_size = length(testSuite) * (n_k_first - p) * n_s_first;
-
-x = zeros(total_size, n_features);
-y = zeros(total_size, dim_y);
+total_size = length(testSuite) * (size(testSuite{1}.y,1)-p) * size(testSuite{1}.y, 3);
+x = zeros(total_size, size(testSuite{1}.y, 2)*p + size(testSuite{1}.u, 2)*(p+1));
+y = zeros(total_size, size(testSuite{1}.y, 2));
 index = 1;
-
 for m = 1:length(testSuite)
     y_m = testSuite{m}.y;
     u_m = testSuite{m}.u;
-    n_s = size(y_m, 3); % number of samples in this test case
-
     for k = p+1:size(y_m,1)
+        % Changed the following line
+        % --- Robust Solution for creating the feature vector x_k ---
+
+        y_features = reshape(permute(y_m(k-p:k-1,:,:), [2 1 3]), 1, [], size(y_m, 3));
         
-        % Correctly reshape y_features per sample
-        y_features = reshape(permute(y_m(k-p:k-1,:,:), [2 1 3]), 1, [], n_s);
-        
-        % Correctly reshape u_features per sample
-        % This handles cases where u_m is 2D (same u for all samples) or 3D
-        if ndims(u_m) == 2
-            u_features_single = reshape(permute(u_m(k-p:k,:), [2 1]), 1, []);
-            u_features = repmat(u_features_single, [1, 1, n_s]);
+        if size(u_m, 3) == 1
+            % NONLINEAR CASE: u_m is a single nominal trajectory that needs to be replicated
+            u_nominal_reshaped = reshape(permute(u_m(k-p:k,:), [2 1 3]), 1, [], 1);
+            u_features = repmat(u_nominal_reshaped, 1, 1, size(y_m, 3));
         else
-            u_features = reshape(permute(u_m(k-p:k,:,:), [2 1 3]), 1, [], n_s);
+            % LINEAR CASE: u_m already contains all corresponding sample trajectories.
+            % Use the corrected reshape logic without 'repmat'.
+            u_features = reshape(permute(u_m(k-p:k,:), [2 1 3]), 1, [], size(y_m, 3));
         end
         
-        % Concatenate features
+        % Concatenate the features to build the final feature vector for the time step.
         x_k = [y_features, u_features];
-
         y_k = y_m(k,:,:);
-
-        % Assign to the main matrices
-        end_index = index + n_s - 1;
-        x(index:end_index, :) = squeeze(x_k)';
-        y(index:end_index, :) = squeeze(y_k)';
-        index = end_index + 1;
+        x(index:index+size(y_k, 3)-1, :) = squeeze(x_k)';
+        y(index:index+size(y_k, 3)-1, :) = squeeze(y_k)';
+        index = index + size(y_k, 3);
     end
 end
 end

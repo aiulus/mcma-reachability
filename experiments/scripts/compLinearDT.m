@@ -22,7 +22,6 @@ clear; clc;
 systype = 'mockSysARX'; 
 %systype = 'polyNARX';
 dim = 4;
-dt = 0.1;
 
 plot_toggle = struct('ddra', 0, 'cc', 0);
 
@@ -32,7 +31,7 @@ rng(2);
 % custom_loadDynamics - extends CORA's loadDynamics()
 sysparams.dim = dim;
 [sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand", sysparams);
-
+dt = sys.dt;
 
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
 % uses uncertainty set specifications in loadDynamics, option "standard"
@@ -117,6 +116,9 @@ end
 %% 3 - Run the Conformance Checking pipeline
 % Pass any relevant parameters to flexBlackBoxConform
 sysparams.cfg = cfg;
+
+
+%% Step 3: Run the Black-Box Identification
 [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 
 % Temporarily disabling dataset passing

@@ -87,14 +87,15 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     end    
     cost_norm = "interval"; % norm for the reachable set: "interval","frob"        
     constraints = "half"; % constraint type: "half", "gen"        
-    methodsGray = ["blackGP","blackCGP"]; % identification approach    
-    %methodsGray = "blackCGP";
+    %methodsGray = ["blackGP","blackCGP"]; % identification approach    
+    methodsGray = "blackCGP";
     methods = ["true" methodsGray];
 
     % Load system dynamics
     %[sys, params_true.R0, params_true.U, p_true] = loadDynamics(dynamics, "rand");
     [sys, params_true.R0, params_true.U, p_true] = custom_loadDynamics(dynamics, "rand", sysparams);
     params_true.tFinal = sys.dt * settings.n_k - sys.dt;     
+    dt = sys.dt;
 
     % Build test suites
     if isempty(TS_in)
@@ -140,8 +141,15 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
         type = methodsGray(i);
         fprintf("Identification with method %s \n", type);
 
+        n_p = 1; % Violates single source of truth!
+
+        f_placeholder = @(y,u) y; % Placeholder function (will be replaced by GP)
+        
+        sys_for_identification = nonlinearARX(f_placeholder, dt, sys.nrOfOutputs, sys.nrOfInputs, n_p);
+        params_id_init.sys = sys_for_identification;
+        
         tic;
-        [results{i+1}.params, results] = custom_conform(sys, params_id_init, options, type);
+        [results{i+1}.params, results] = custom_conform(sys_for_identification, params_id_init, options, type);
         Ts = toc;
 
         results{i+1} = struct( ...

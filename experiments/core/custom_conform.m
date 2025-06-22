@@ -1,4 +1,4 @@
-function [params, results] = custom_conform(sys,params,options,varargin)
+function [params, results] = conform(sys,params,options,varargin)
 % conform - performs reachset conformance by computing the reachable 
 %         of a system and checking whether all measurements are included
 %

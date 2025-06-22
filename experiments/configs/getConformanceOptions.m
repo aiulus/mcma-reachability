@@ -23,4 +23,6 @@ function options = getConformanceOptions(options_reach, cost_norm, constraints, 
     options.approx.verbose = false;
     options.approx.filename = 'temp_gp_results';
     options.approx.gp_runs = 10;
+    %% Achtung! Not sure what this does
+    options.approx.cgp_n_m_conf = 4;
 end
