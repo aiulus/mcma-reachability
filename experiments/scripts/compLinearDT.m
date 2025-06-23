@@ -117,9 +117,9 @@ end
 % Pass any relevant parameters to flexBlackBoxConform
 sysparams.cfg = cfg;
 
-
 %% Step 3: Run the Black-Box Identification
 [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+%[completed, results, R_id, R_val] = siso_flexBBconform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 
 % Temporarily disabling dataset passing
 %[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);

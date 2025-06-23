@@ -1,4 +1,4 @@
-function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
+function [completed, results, R_id, R_val] = siso_flexBBconform(varargin)
 % --------------------------------------------------------------------
     % HOW TO USE flexBlackBoxConform:
     %
@@ -88,7 +88,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     cost_norm = "interval"; % norm for the reachable set: "interval","frob"        
     constraints = "half"; % constraint type: "half", "gen"        
     %methodsGray = ["blackGP","blackCGP"]; % identification approach    
-    methodsGray = "blackGP";
+    methodsGray = "blackCGP";
     methods = ["true" methodsGray];
 
     % Load system dynamics
@@ -135,38 +135,48 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     %% Debug statement
     %params_id_init.R0 = zonotope(zeros(0, 1));
     params_id_init.U = zonotope([c_U eye(size(c_U, 1)) ones(size(c_U))]);
-
-    % Identification ------------------------------------------------------
+    ts_train = params_true.testSuite_train{1};
+    ts_val = params_id_init.testSuite_val{1};
     for i = 1:length(methodsGray)
         type = methodsGray(i);
-        fprintf("Identification with method %s \n", type);
-
-        n_p = options.approx.p; % Violates single source of truth!
-
-        f_placeholder = @(y,u) y; % Placeholder function (will be replaced by GP)
-
-        dim_y = sys.nrOfOutputs*n_p;
-        dim_u = dim_y*(n_p+1);
-
-        % ar_dim_y = size(testSuite{1}.y, 2)*p + size(testSuite{1}.u, 2)*(p+1)
+        % --- CORRECTED Inner Loop ---
+        for i_output = 1:sys.nrOfOutputs
+            fprintf('--- Identifying Output %d of %d ---\n', i_output, sys.nrOfOutputs);
         
-        sys_mock = nonlinearARX(f_placeholder, dt, dim_y, dim_u, n_p);
-        params_id_init.sys_mock = sys_mock;        
-        params_id_init.sys = sys;
-
-        tic;
-        [results{i+1}.params, results] = custom_conform(sys_mock, params_id_init, options, type);
-        Ts = toc;       
+            % --- 1. Create a temporary copy of the parameters for this iteration ---
+            params_miso = params_id_init;
         
-        % After the loop, 'identified_systems' will contain four separate models.
-        % Together, they represent the full dynamics of your original 4-output system.
-        results{i+1} = struct( ...
-            'sys', results.sys, ...
-            'options', options_reach, ...
-            'name', type ...
-            );
-
-        fprintf("Identification time: %.4f\n", Ts);
+            % --- 2. Create NEW testCase objects with the single-column y-data ---
+            
+            % --- For Training Data ---
+            ytrain_i = ts_train.y(:, i_output, :);
+            % Create a new testCase object
+            new_tc_train = testCase(ytrain_i, ts_train.u, ytrain_i, dt);
+            % Replace the old testCase in our temporary params struct
+            params_miso.testSuite_train{1} = new_tc_train;
+        
+            % --- For Validation Data ---        
+            yval_i = ts_val.y(:, i_output, :);
+            % Create a new testCase object
+            new_tc_val = testCase(yval_i, ts_val.u, yval_i, dt);
+            % Replace the old testCase in our temporary params struct
+            params_miso.testSuite_val{1} = new_tc_val;
+            
+            % --- 3. Create a SINGLE-OUTPUT nonlinearARX shell for this iteration ---
+            n_p = 1;
+            f_placeholder = @(y,u) y; 
+            %sys_miso = nonlinearARX(f_placeholder, dt, sys.nrOfOutputs, sys.nrOfInputs, n_p);
+            sys_miso = nonlinearARX(f_placeholder, dt, 1, 1, n_p);
+            params_miso.sys = sys_miso; % Also update the sys object in the temp params
+        
+            % --- 4. Run conformance on the single-output problem ---
+            % Pass the temporary 'params_miso' struct which now contains the new testCase
+            [identified_params, ~] = custom_conform(sys_miso, params_miso, options, type);
+            conform(sys,params,options,varargin)
+            
+            % --- 5. Store the identified model for this output ---
+            identified_systems{i_output} = identified_params.sys;
+        end
     end
 
     %% Capture reachsets for later analysis

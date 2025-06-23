@@ -1,4 +1,4 @@
-function [params, results] = conform(sys,params,options,varargin)
+function [params, results] = custom_conform(sys,params,options,varargin)
 % conform - performs reachset conformance by computing the reachable 
 %         of a system and checking whether all measurements are included
 %
@@ -72,7 +72,7 @@ switch type
     
         % Identify conformant parameters
         if type == "white" || contains(type,"black")
-            [params, fval, p_opt,  union_y_a] = conform_white(sys_upd, params, options);
+            [params, fval, p_opt,  union_y_a] = custom_conform_white(sys_upd, params, options);
             results.sys = sys;
             results.unifiedOutputs = union_y_a;
     

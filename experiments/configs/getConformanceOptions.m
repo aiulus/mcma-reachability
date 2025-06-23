@@ -5,6 +5,9 @@ function options = getConformanceOptions(options_reach, cost_norm, constraints, 
     options.cs.verbose = false;
     options.cs.cost = cost_norm;
     options.cs.constraints = constraints;
+    options.cs.derivRecomputation = 0;
+    %% TODO: Remove / Debug statement
+    options.cs.w = zeros(100, 1);
     
     % Black-box approximation options
     options.approx.gp_parallel = true;

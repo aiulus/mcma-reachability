@@ -1,4 +1,4 @@
-function sys_approx = conform_black(params,options,type)
+function sys_approx = custom_conform_black(params,options,type)
 % conform_black - identify a black-box model with genetic programming
 %
 % Syntax:
@@ -39,8 +39,8 @@ sys = contDynamics();
 [params,options] = validateOptions(sys, params, options);
 
 % reformat training and validation data
-[xtrain,ytrain] = aux_testSuite2regress(params.testSuite_train, options.approx.p);
-[xval,yval] = aux_testSuite2regress(params.testSuite_val, options.approx.p);
+[xtrain,ytrain] = aux_testSuite2regress(params, params.testSuite_train, options.approx.p);
+[xval,yval] = aux_testSuite2regress(params, params.testSuite_val, options.approx.p);
 
 if options.approx.verbose
     fprintf("Approximate dynamics with %s. \n", type);
@@ -146,39 +146,49 @@ f = eval(func + "]");
 end
 
 
-function [x,y] = aux_testSuite2regress(testSuite, p)
+function [x,y] = aux_testSuite2regress(params, testSuite, p)
 % x = [y_1(k-p) y_2(k-p) ... y_n(k-p) y_1(k-1) y_2(k-1) ... y_n(k-1) ...
 %      u_1(k-p) u_2(k-p) ... u_n(k-p) u_1(k) u_2(k) ... u_n(k)]
+if isa(params.sys, "linearARX") || isa(params.sys, "linearSysDT")
+    % All data is in testSuite{1}. Both y_m and u_m are 3D arrays containing
+    % data for all simulations. No outer loop over 'm' is needed.
+    
+    y_m = testSuite{1}.y;
+    u_m = testSuite{1}.u;
+    
+    total_size = (size(y_m,1)-p) * size(y_m, 3);
+    x = zeros(total_size, size(y_m, 2)*p + size(u_m, 2)*(p+1));
+    y = zeros(total_size, size(y_m, 2));
+    index = 1;
 
-total_size = length(testSuite) * (size(testSuite{1}.y,1)-p) * size(testSuite{1}.y, 3);
-x = zeros(total_size, size(testSuite{1}.y, 2)*p + size(testSuite{1}.u, 2)*(p+1));
-y = zeros(total_size, size(testSuite{1}.y, 2));
-index = 1;
-for m = 1:length(testSuite)
-    y_m = testSuite{m}.y;
-    u_m = testSuite{m}.u;
     for k = p+1:size(y_m,1)
-        % Changed the following line
-        % --- Robust Solution for creating the feature vector x_k ---
-
-        y_features = reshape(permute(y_m(k-p:k-1,:,:), [2 1 3]), 1, [], size(y_m, 3));
-        
-        if size(u_m, 3) == 1
-            % NONLINEAR CASE: u_m is a single nominal trajectory that needs to be replicated
-            u_nominal_reshaped = reshape(permute(u_m(k-p:k,:), [2 1 3]), 1, [], 1);
-            u_features = repmat(u_nominal_reshaped, 1, 1, size(y_m, 3));
-        else
-            % LINEAR CASE: u_m already contains all corresponding sample trajectories.
-            % Use the corrected reshape logic without 'repmat'.
-            u_features = reshape(permute(u_m(k-p:k,:), [2 1 3]), 1, [], size(y_m, 3));
-        end
-        
-        % Concatenate the features to build the final feature vector for the time step.
-        x_k = [y_features, u_features];
+        % Create regressors: u_m is already 3D, so we reshape it directly
+        % without needing repmat.
+        x_k = [reshape(permute(y_m(k-p:k-1,:,:), [2 1 3]), 1, [], size(y_m, 3)) ...
+               reshape(permute(u_m(k-p:k,:,:), [2 1 3]), 1, [], size(u_m, 3))];
         y_k = y_m(k,:,:);
-        x(index:index+size(y_k, 3)-1, :) = squeeze(x_k)';
-        y(index:index+size(y_k, 3)-1, :) = squeeze(y_k)';
-        index = index + size(y_k, 3);
+        
+        num_pts = size(y_k, 3);
+        x(index:index+num_pts-1, :) = squeeze(x_k)';
+        y(index:index+num_pts-1, :) = squeeze(y_k)';
+        index = index + num_pts;
+    end
+else
+    total_size = length(testSuite) * (size(testSuite{1}.y,1)-p) * size(testSuite{1}.y, 3);
+    x = zeros(total_size, size(testSuite{1}.y, 2)*p + size(testSuite{1}.u, 2)*(p+1));
+    y = zeros(total_size, size(testSuite{1}.y, 2));
+    index = 1;
+    for m = 1:length(testSuite)
+        y_m = testSuite{m}.y;
+        u_m = testSuite{m}.u;
+        for k = p+1:size(y_m,1)
+            x_k = [reshape(permute(y_m(k-p:k-1,:,:), [2 1 3]), 1, [], size(y_m, 3)) ...
+                repmat(reshape(permute(u_m(k-p:k,:), [2 1 3]), 1, [], 1), 1, 1, size(y_m, 3))];
+            y_k = y_m(k,:,:);
+            x(index:index+size(y_k, 3)-1, :) = squeeze(x_k)';
+            y(index:index+size(y_k, 3)-1, :) = squeeze(y_k)';
+            index = index + size(y_k, 3);
+        end
     end
 end
 end
