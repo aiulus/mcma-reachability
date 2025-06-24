@@ -115,7 +115,7 @@ switch dynamics
         A = eye(n) + 1.01 * diag(ones(n-1,1), 1);
         B = ones(n, 1);
         C = eye(n);
-        D = 0;
+        D = zeros(n, 1);
 
         %f = @(y, u) A * y + B .* u;
         %f = @(y, u) A * y(:,1) + B .* u(:,1);  
@@ -133,13 +133,13 @@ switch dynamics
         R0 = zonotope([c_R0, G_R0]);
 
         % Input uncertainty
-        switch typeline
+        switch type
             case "rand"
                 c_U = randn(dim_u,1);
                 G_U = rand(dim_u, dim_u);
             case "diag"
                 c_U = 0.1 * randn(dim_u,1);
-                G_U = diag(0.1 * rand(dim_u,1));
+                G_U = diag(0.1 * rand(dim_u,dim_u));
             case "standard"
                 c_U = zeros(dim_u,1);
                 G_U = 0.2 * eye(dim_u);

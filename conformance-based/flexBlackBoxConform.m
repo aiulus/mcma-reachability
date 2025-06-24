@@ -88,7 +88,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     cost_norm = "interval"; % norm for the reachable set: "interval","frob"        
     constraints = "half"; % constraint type: "half", "gen"        
     %methodsGray = ["blackGP","blackCGP"]; % identification approach    
-    methodsGray = "blackGP";
+    methodsGray = "blackCGP";
     methods = ["true" methodsGray];
 
     % Load system dynamics

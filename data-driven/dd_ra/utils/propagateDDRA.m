@@ -12,7 +12,7 @@ function [X_model, X_data] = propagateDDRA(U_full, X_0T, X_1T, X0, U, W, sys, M_
     % Outputs:
     %   - X_model    : cell array of reachable sets using the known model
     %   - X_data     : cell array of reachable sets using data-driven estimate
-    if isa(sys, 'linerSysDT') || isa(sys, 'linearSys')
+    if isa(sys, 'linearSysDT') || isa(sys, 'linearSys')
         % Initialize reachable set containers
         X_model = cell(totalsteps + 1, 1);
         X_data = cell(totalsteps + 1, 1);

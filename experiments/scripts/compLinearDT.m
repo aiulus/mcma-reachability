@@ -16,11 +16,32 @@
 %   the system or trajectory lengths.
 
 clear; clc;
+%% --- 0.0  Make sure CORA's @polytope wins --------------------------------
+% Remove MPT-3 compatibility layer and flush any already-loaded class
+compatRoot = fullfile( ...
+    userpath, 'tbxmanager','toolboxes','mpt','3.2.1','all', ...
+    'mpt3-3_2_1','mpt','modules','compatibility');
+
+if exist(compatRoot,'dir')
+    rmpath(genpath(compatRoot));                 % drop the whole subtree
+    fprintf('[CORA-fix] removed MPT-3 compatibility folder:\n  %s\n', compatRoot);
+end
+
+% Put CORA’s contSet folder at the very front, just to be safe
+addpath(fullfile('C:\Users\aybuk\Documents\MATLAB\CORA','contSet'),'-begin');
+
+% Flush everything that MATLAB may have cached *before* the path change
+clear classes                                     % unload Polyhedron etc.
+rehash toolboxcache
+%% -------------------------------------------------------------------------
+
 
 %% 0 - Specify system & data parameters
 % 'Square': nonlinearARX; 'pedestrian': nonlinearSysDT
-systype = 'mockSysARX'; 
+%systype = 'mockSysARX'; 
 %systype = 'polyNARX';
+
+systype = 'mockSys';
 dim = 4;
 
 plot_toggle = struct('ddra', 0, 'cc', 0);
@@ -105,6 +126,7 @@ totalsteps = settings.n_k_train; % #(identification steps after identification)
 %                 $\mathcal{M}_{AB}$ to compute the reachable sets. 
 [X_model_P2, X_data_P2] = propagateDDRA(U_full, X_0T, X_1T, params.R0, params.U, W, sys, M_ab, totalsteps);
 
+%% TODO: 'visualizeAlinearDT' needs fixing
 % Visualize
 if plot_toggle.ddra
     projectedDims = {[1 2],[3 4],[4 5]};
@@ -118,8 +140,14 @@ end
 sysparams.cfg = cfg;
 
 %% Step 3: Run the Black-Box Identification
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 %[completed, results, R_id, R_val] = siso_flexBBconform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 
 % Temporarily disabling dataset passing
 %[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);
+
+[completed, results, R_id, R_val] = flexWhiteBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+
+%grayAlg = ["graySim","graySeq","grayLS"];
+%[completed, results, R_id, R_val] = flexGrayBoxConform('dynamics', systype, 'testSuites', testSuites, ...
+ %   'sysparams', sysparams, 'grayAlg', grayAlg);
