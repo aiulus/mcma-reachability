@@ -44,7 +44,7 @@ rehash toolboxcache
 systype = 'mockSys';
 dim = 4;
 
-plot_toggle = struct('ddra', 0, 'cc', 0);
+plot_toggle = struct('ddra', 1, 'cc', 0);
 
 rng(2);
 
@@ -129,10 +129,12 @@ totalsteps = settings.n_k_train; % #(identification steps after identification)
 %% TODO: 'visualizeAlinearDT' needs fixing
 % Visualize
 if plot_toggle.ddra
-    projectedDims = {[1 2],[3 4],[4 5]};
+    projectedDims = {[1 2]};
     axx{1} = [0.75,1.5,0.5,4]; axx{2} = [0.75,3,0.8,2.2];axx{3} = [0.75,2.3,0.75,2.8];
     numberofplots = length(X_model_P2); %length(X_model_P2)
-    visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
+    %visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
+    visualizeDDRA(params.R0, X_model_P2, X_data_P2, ...
+              projectedDims, axx, numberofplots);
 end
 
 %% 3 - Run the Conformance Checking pipeline
