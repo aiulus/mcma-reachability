@@ -1,26 +1,17 @@
 function [completed, results, R_id, R_val] = flexGrayBoxConform(varargin)
 % flexGrayBoxConform  –  Reach‑set conformance synthesis for **gray‑box** models.
 %
-%   This helper mirrors *flexBlackBoxConform* and *flexWhiteBoxConform*,
-%   but routes everything through CORA’s gray‑box pipeline
-%   (`priv_conform_gray`).  It supports the three gray algorithms
-%   described in [Luetzow & Althoff 2024]:
-%
 %     • "graySim" – simultaneous optimisation of system parameters *and*
 %                   uncertainty sets (outer‑loop fmincon).
 %     • "graySeq" – sequential optimisation (first parameters, then sets).
 %     • "grayLS"  – least‑squares cost instead of max/∞‑norm.
 %
-%   Signature (identical to the other *flex* helpers):
-%
-%     [completed, results, R_id, R_val] = flexGrayBoxConform( ... )
-%
 %   Name–Value pairs (all optional):
 %     'dynamics'      – char/string, system identifier for loadDynamics()  (default "Square")
-%     'testSuites'    – 1×3 cell {id , train , val}                       (default: auto‑generate)
+%     'testSuites'    – 1×3 cell {id , train , val}                        (default: auto‑generate)
 %     'plot_settings' – struct as in getConfig()                           (default: cfg.plot_settings)
 %     'sysparams'     – struct forwarded to custom_loadDynamics            (default: empty)
-%     'grayAlg'       – "graySim" | "graySeq" | "grayLS"                (default "graySeq")
+%     'grayAlg'       – "graySim" | "graySeq" | "grayLS"                   (default "graySeq")
 %
 %   Outputs:
 %     • completed – logical flag (true if everything ran)
@@ -33,7 +24,9 @@ function [completed, results, R_id, R_val] = flexGrayBoxConform(varargin)
 %       flexGrayBoxConform('dynamics','platoon','grayAlg','graySeq');
 %
 %   --------------------------------------------------------------------
-%   © 2025 – Your Name / Lab
+%   © 2025 – Adapted from:
+%     • contDynamics/@contDynamics/conform.m
+%     • contDynamics/@contDynamics/private/priv_conform_gray.m
 % ---------------------------------------------------------------------
 
 %% 0)  Parse options ------------------------------------------------------
@@ -49,7 +42,8 @@ plot_settings = p.Results.plot_settings;
 DYN           = p.Results.dynamics;
 TS_in         = p.Results.testSuites;
 sysparams     = p.Results.sysparams;
-grayAlg       = validatestring(p.Results.grayAlg,{"graySim","graySeq","grayLS"});
+modes = {'graySim','graySeq','grayLS'};
+grayAlg = validatestring(p.Results.grayAlg, modes); 
 
 % Obtain global config (single source‑of‑truth)
 if isfield(sysparams,'cfg')
@@ -111,14 +105,14 @@ options.cs.w      = ones(1, settings.n_k);
 c_R0 = zeros(size(center(params_true.R0)));
 c_U  = zeros(size(center(params_true.U)));
 params_id_init       = params_true;
-params_id_init.R0    = zonotope([c_R0 eye(sys.nrOfDims)]);
+params_id_init.R0    = zonotope([c_R0 eye(sys.nrOfStates)]);
 params_id_init.U     = zonotope([c_U  eye(sys.nrOfInputs)]);
 
 %% 5)  GRAY‑BOX identification -------------------------------------------
 
 fprintf("\n[flexGrayBoxConform]  Identification using %s …\n", grayAlg);
 tmr = tic;
-[params_gray, resGray] = conform(sys, params_id_init, options, grayAlg); %#ok<ASGLU> 
+[params_gray, resGray] = conform(sys, params_id_init, options, grayAlg); 
 T_ident = toc(tmr);
 fprintf("      finished in %.2f s\n", T_ident);
 
@@ -131,7 +125,7 @@ results{2}       = struct('sys',resGray.sys, 'params',params_gray, 'options',opt
 
 R_id = cell(size(params_true.testSuite));
 for m = 1:numel(params_true.testSuite)
-    [R_id{m}, ~] = validateReach(params_true.testSuite{m}, results, 1); %#ok<NASGU>
+    [R_id{m}, ~] = validateReach(params_true.testSuite{m}, results, 1); 
 end
 
 %% 7)  Reachability on validation data -----------------------------------
@@ -148,7 +142,7 @@ validateReachableSets(TS_val, results, settings.n_k_val, {"true",grayAlg}, ...
 
 completed = true;
 
-end  % >>> flexGrayBoxConform.m <<<
+end  
 
 %% -----------------------------------------------------------------------
 % Helper – default parameter setter (centre‑vector update only)
@@ -160,4 +154,59 @@ function [sys_out, params_out] = set_p_centers(p, params_in, sys_in)
     params_out.R0   = zonotope(c_R0, generators(params_in.R0));
     params_out.U    = zonotope(c_U , generators(params_in.U));
     sys_out         = sys_in;  % no structural change to the model
+end
+
+function validateReachableSets(testSuite, configs, n_k_val, methods, varargin)
+%  Simple containment statistics + optional plotting
+%
+%  INPUTS (same as call site)
+%    testSuite   – cell array of testCase objects (validation data)
+%    configs     – cell array with fields {sys,params,options,name}
+%    n_k_val     – # of timesteps in each validation test case
+%    methods     – cellstr or string array naming each config (order must
+%                  match `configs`)
+%
+%  OPTIONAL name–value pairs:
+%      'plot_settings'        – struct (same layout as in validateReach)
+%      'label'                – char   (header shown in console)
+%      'require_full_containment' – logical (default = false)
+% -------------------------------------------------------------------------
+
+    p = inputParser;
+    addOptional(p,'plot_settings',[]);
+    addOptional(p,'label','VALIDATION DATA');
+    addOptional(p,'require_full_containment',false);
+    parse(p,varargin{:});
+    plot_settings          = p.Results.plot_settings;
+    label                  = p.Results.label;
+    require_full_contain   = p.Results.require_full_containment;
+
+    num_out = zeros(numel(methods),1);
+    num_in  = zeros(numel(methods),1);
+
+    for m = 1:numel(testSuite)
+        if isempty(plot_settings)
+            [~, eval] = validateReach(testSuite{m}, configs, true);
+        else
+            [~, eval] = validateReach(testSuite{m}, configs, true, plot_settings);
+        end
+        num_out = num_out + eval.num_out;
+        num_in  = num_in  + eval.num_in;
+    end
+
+    samplesTotal = numel(testSuite) * n_k_val * size(testSuite{1}.y,3);
+    fprintf("\n%s:\n", label);
+    for i = 1:numel(methods)
+        pctContained = 100 * num_in(i) / (num_in(i)+num_out(i));
+        notValid     = 100 * (samplesTotal - (num_out(i)+num_in(i))) / samplesTotal;
+
+        if require_full_contain
+            suffix = " (must be 100 %)";
+        else
+            suffix = "";
+        end
+
+        fprintf("  %-10s: %.2f %% samples contained%s\n", methods{i}, pctContained, suffix);
+        fprintf("              %.2f %% samples invalid\n", notValid);
+    end
 end

@@ -1,15 +1,11 @@
 % compLinearDT.m
 % ------------------------------------------------------------------------------
-% This script runs both <enter DDRA ref.> and CORA's black-box ARX
-% conformance pipeline on the same randomly generated dataset. Replace any
-% hardcoded parameters as needed.
+% This script runs both <enter DDRA ref.> and CORA's conformance pipeline 
+% on the same randomly generated dataset. Replace any hardcoded parameters as needed.
 %
 % Prerequisites (on MATLAB path):
-%   • systemsDDRA, initialSetupDDRA, getDataDDRA, getTrajsDDRA,
-%     estimateAB_ddra, propagateDDRA      (Paper 2)
-%   • example_nonlinearARX_conform_03_black_common,
-%     convertCommonToP1                    (Paper 1)
-%   • createDataSet (aux_DDRA + aux_CC)    (this file)
+%   • estimateAB_ddra, propagateDDRA    
+%   • createDataSet 
 %
 % Usage:
 %   Run this file directly. Adjust “sysType”, “dim”, “initPoints”, “T” to change
@@ -18,21 +14,21 @@
 clear; clc;
 %% --- 0.0  Make sure CORA's @polytope wins --------------------------------
 % Remove MPT-3 compatibility layer and flush any already-loaded class
-compatRoot = fullfile( ...
-    userpath, 'tbxmanager','toolboxes','mpt','3.2.1','all', ...
-    'mpt3-3_2_1','mpt','modules','compatibility');
+%compatRoot = fullfile( ...
+%    userpath, 'tbxmanager','toolboxes','mpt','3.2.1','all', ...
+%    'mpt3-3_2_1','mpt','modules','compatibility');
 
-if exist(compatRoot,'dir')
-    rmpath(genpath(compatRoot));                 % drop the whole subtree
-    fprintf('[CORA-fix] removed MPT-3 compatibility folder:\n  %s\n', compatRoot);
-end
+%if exist(compatRoot,'dir')
+%    rmpath(genpath(compatRoot));                 % drop the whole subtree
+%    fprintf('[CORA-fix] removed MPT-3 compatibility folder:\n  %s\n', compatRoot);
+%end
 
 % Put CORA’s contSet folder at the very front, just to be safe
-addpath(fullfile('C:\Users\aybuk\Documents\MATLAB\CORA','contSet'),'-begin');
+%addpath(fullfile('C:\Users\aybuk\Documents\MATLAB\CORA','contSet'),'-begin');
 
 % Flush everything that MATLAB may have cached *before* the path change
-clear classes                                     % unload Polyhedron etc.
-rehash toolboxcache
+%clear classes                                     % unload Polyhedron etc.
+%rehash toolboxcache
 %% -------------------------------------------------------------------------
 
 
@@ -43,6 +39,8 @@ rehash toolboxcache
 
 systype = 'mockSys';
 dim = 4;
+
+conformance_method = "gray";
 
 plot_toggle = struct('ddra', 1, 'cc', 0);
 
@@ -70,12 +68,6 @@ dt = sys.dt;
 %               configuration files. 
 cfg = getConfig();
 settings = cfg.settings;
-%settings.n_s = 1;
-%settings.n_s_train = 1;
-%settings.n_s_val = 1;
-%params = struct('R0', R0, 'U', U);
-%initpoints = 5; % #(distinct trajectories to simulate)
-%T = 120; % length of each trajectory
 k = settings.n_m_train;
 T_k = settings.n_k_train;
 
@@ -98,8 +90,6 @@ testSuites{3} = testSuite_val;
 
 % aux_CORAtoDDRA - Custom function that converts testSuite objects to data
 %                  representation format that the DDRA pipeline expects
-%[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite, sys);
-%[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
 [x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
 
 %% 2 - Run the DDRA pipeline
@@ -110,9 +100,6 @@ testSuites{3} = testSuite_val;
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; 
 W = zonotope(zeros(sys.nrOfOutputs, 1), 0*eye(sys.nrOfOutputs, size(X_1T, 2)));
-%WmatZ = zonotope(zeros(sys.nrOfOutputs, 1), 0.01*eye(sys.nrOfOutputs, size(X_1T, 2)));
-%WmatZ = matZonotope(zeros(sys.nrOfOutputs, (size(X_1T, 2))), {zeros(sys.nrOfOutputs, size(X_1T, 2))});
-%WmatZ = zonotope(0*ones(sys.nrOfOutputs,1),(1e-4)*ones(sys.nrOfOutputs,1));
 
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
@@ -141,15 +128,19 @@ end
 % Pass any relevant parameters to flexBlackBoxConform
 sysparams.cfg = cfg;
 
-%% Step 3: Run the Black-Box Identification
-%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
-%[completed, results, R_id, R_val] = siso_flexBBconform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+switch conformance_method
+    case "black"
+        [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, ...
+            'testSuites', testSuites, 'sysparams', sysparams);
+    case "gray"
+        %grayAlg = ["graySim","graySeq","grayLS"]; % pass to
+        %flexGrayBoxConform(..., 'grayAlg', grayAlg) - default: graySeq
+        [completed, results, R_id, R_val] = flexGrayBoxConform('dynamics', systype, ...
+            'testSuites', testSuites, 'sysparams', sysparams);
+    case "white"
+        [completed, results, R_id, R_val] = flexWhiteBoxConform('dynamics', systype, ...
+            'testSuites', testSuites, 'sysparams', sysparams);
+end
 
-% Temporarily disabling dataset passing
-%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'sysparams', sysparams);
 
-[completed, results, R_id, R_val] = flexWhiteBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
 
-%grayAlg = ["graySim","graySeq","grayLS"];
-%[completed, results, R_id, R_val] = flexGrayBoxConform('dynamics', systype, 'testSuites', testSuites, ...
- %   'sysparams', sysparams, 'grayAlg', grayAlg);

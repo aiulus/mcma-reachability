@@ -1,20 +1,6 @@
 function [completed, results, R_id, R_val] = flexWhiteBoxConform(varargin)
 % flexWhiteBoxConform  –  Reach‑set conformance identification for **white‑box** models.
 %
-%   This helper mirrors *flexBlackBoxConform* but keeps only the white‑box
-%   branch of CORA’s `conform.m` pipeline (i.e. `priv_conform_white`).  All
-%   scaffolding for black/grey/RRT paths has been stripped so that you can
-%   benchmark pure white‑box identification with minimal boiler‑plate.
-%
-%   The function is intentionally *name‑value* driven so you may override
-%   any piece of the pipeline without editing internal code.  Unspecified
-%   arguments fall back to the defaults returned by **getConfig()**.
-%
-%   --------------------------------------------------------------------
-%   Signature (same as *flexBlackBoxConform*):
-%
-%   [completed, results, R_id, R_val] = flexWhiteBoxConform( ... )
-%
 %   Name–Value pairs:
 %     'dynamics'      – String   : system identifier for loadDynamics()   (default "Square")
 %     'testSuites'    – 1×3 cell : {train+id , train , val} pre‑computed  (default = auto‑generate)
@@ -33,12 +19,10 @@ function [completed, results, R_id, R_val] = flexWhiteBoxConform(varargin)
 %       [~, res] = flexWhiteBoxConform('dynamics','platoon');
 %
 %   --------------------------------------------------------------------
-%   © 2025 – Your Name / Lab
-% ---------------------------------------------------------------------
-
-% ---------------------------------------------------------------------
-% 0)  Parse optional arguments
-% ---------------------------------------------------------------------
+%   © 2025 – Adapted from:
+%     • contDynamics/@contDynamics/conform.m
+%     • contDynamics/@contDynamics/private/priv_conform_white.m
+% ----------------------------------------------------------------------
 
 p = inputParser;
 addParameter(p,'plot_settings',[]);
