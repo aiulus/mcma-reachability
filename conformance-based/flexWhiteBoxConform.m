@@ -31,9 +31,9 @@ addParameter(p,'testSuites',[]);
 addParameter(p,'sysparams',struct());
 parse(p,varargin{:});
 plot_settings = p.Results.plot_settings;
-DYN           = p.Results.dynamics;
-TS_in         = p.Results.testSuites;
-sysparams     = p.Results.sysparams;
+DYN = p.Results.dynamics;
+TS_in = p.Results.testSuites;
+sysparams = p.Results.sysparams;
 
 % Global configuration (single source of truth)
 if isfield(sysparams,'cfg')
@@ -41,8 +41,8 @@ if isfield(sysparams,'cfg')
 else
     cfg = getConfig();
 end
-settings      = cfg.settings;
-opts_reach    = cfg.options_reach;
+settings = cfg.settings;
+opts_reach = cfg.options_reach;
 
 % Fall‑back to default plot settings
 if isempty(plot_settings)
@@ -68,33 +68,33 @@ params_true.tFinal = sys.dt * settings.n_k - sys.dt;
 
 if isempty(TS_in)
     % auto‑generate via CORA createTestSuite
-    params_true.testSuite       = createTestSuite(sys, params_true, settings.n_k      , settings.n_m      , settings.n_s      , cfg.options_testS);
+    params_true.testSuite = createTestSuite(sys, params_true, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
     params_true.testSuite_train = createTestSuite(sys, params_true, settings.n_k_train, settings.n_m_train, settings.n_s_train, cfg.options_testS);
-    params_true.testSuite_val   = createTestSuite(sys, params_true, settings.n_k_val  , settings.n_m_val  , settings.n_s_val  , cfg.options_testS);
+    params_true.testSuite_val  = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, settings.n_s_val, cfg.options_testS);
 else
-    params_true.testSuite       = TS_in{1};
+    params_true.testSuite = TS_in{1};
     params_true.testSuite_train = TS_in{2};
-    params_true.testSuite_val   = TS_in{3};
+    params_true.testSuite_val = TS_in{3};
 end
 
 % ---------------------------------------------------------------------
 % 3)  Build option struct for conformance solver
 % ---------------------------------------------------------------------
 
-options               = getConformanceOptions(opts_reach, cost_norm, constraints, sys);
-options.cs.verbose     = false;            % suppress solver chatter
-options.cs.cost        = cost_norm;        % propagate cost norm
+options = getConformanceOptions(opts_reach, cost_norm, constraints, sys);
+options.cs.verbose = false;            % suppress solver chatter
+options.cs.cost = cost_norm;        % propagate cost norm
 options.cs.constraints = constraints;      % propagate constraint type
 
 % ---------------------------------------------------------------------
 % 4)  Initial guesses for uncertainty sets (centred unit zonotopes)
 % ---------------------------------------------------------------------
 
-c_R0   = zeros(size(center(params_true.R0)));
-c_U    = zeros(size(center(params_true.U)));
-params_id_init       = params_true;
-params_id_init.R0    = zonotope([c_R0 eye(sys.nrOfStates)]);
-params_id_init.U     = zonotope([c_U  eye(sys.nrOfInputs)]);
+c_R0 = zeros(size(center(params_true.R0)));
+c_U = zeros(size(center(params_true.U)));
+params_id_init = params_true;
+params_id_init.R0 = zonotope([c_R0 eye(sys.nrOfStates)]);
+params_id_init.U = zonotope([c_U  eye(sys.nrOfInputs)]);
 
 % ---------------------------------------------------------------------
 % 5)  **WHITE‑BOX** conformance identification
@@ -104,19 +104,19 @@ fprintf("\n[flexWhiteBoxConform]  Identification (white‑box) …\n");
 tmr = tic;
 [params_white, ~] = conform(sys, params_id_init, options, "white");
 T_ident = toc(tmr);
-fprintf("      finished in %.2f s\n", T_ident);
+fprintf("finished in %.2f s\n", T_ident);
 
 % Collect configs for downstream reach/validation
-results              = cell(2,1);
-results{1}.sys       = sys;
-results{1}.params    = params_true;
-results{1}.options   = opts_reach;
-results{1}.name      = "true";
+results = cell(2,1);
+results{1}.sys = sys;
+results{1}.params = params_true;
+results{1}.options = opts_reach;
+results{1}.name = "true";
 
-results{2}.sys       = sys;
-results{2}.params    = params_white;
-results{2}.options   = opts_reach;
-results{2}.name      = "white";
+results{2}.sys = sys;
+results{2}.params = params_white;
+results{2}.options = opts_reach;
+results{2}.name = "white";
 
 % ---------------------------------------------------------------------
 % 6)  Reachability on identification data

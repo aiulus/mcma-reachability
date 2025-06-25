@@ -39,9 +39,9 @@ addParameter(p,'sysparams',struct());
 addParameter(p,'grayAlg',"graySeq");
 parse(p,varargin{:});
 plot_settings = p.Results.plot_settings;
-DYN           = p.Results.dynamics;
-TS_in         = p.Results.testSuites;
-sysparams     = p.Results.sysparams;
+DYN = p.Results.dynamics;
+TS_in = p.Results.testSuites;
+sysparams = p.Results.sysparams;
 modes = {'graySim','graySeq','grayLS'};
 grayAlg = validatestring(p.Results.grayAlg, modes); 
 
@@ -51,15 +51,15 @@ if isfield(sysparams,'cfg')
 else
     cfg = getConfig();
 end
-settings   = cfg.settings;
-optsReach  = cfg.options_reach;
+settings = cfg.settings;
+optsReach = cfg.options_reach;
 
 if isempty(plot_settings)
     plot_settings = cfg.plot_settings;
 end
 
 % Tunable knobs (override here or expose via new NVP):
-cost_norm   = "interval";   % "interval" | "frob" – only relevant inside conform_white sub‑call
+cost_norm = "interval";   % "interval" | "frob" – only relevant inside conform_white sub‑call
 constraints = "half";       % "half" | "gen"
 
 %% 1)  Load system --------------------------------------------------------
@@ -70,25 +70,25 @@ params_true.tFinal = sys.dt * settings.n_k - sys.dt;
 %% 2)  Build / import test suites ----------------------------------------
 
 if isempty(TS_in)
-    params_true.testSuite       = createTestSuite(sys, params_true, settings.n_k      , settings.n_m      , settings.n_s      , cfg.options_testS);
+    params_true.testSuite = createTestSuite(sys, params_true, settings.n_k, settings.n_m, settings.n_s, cfg.options_testS);
     params_true.testSuite_train = createTestSuite(sys, params_true, settings.n_k_train, settings.n_m_train, settings.n_s_train, cfg.options_testS);
-    params_true.testSuite_val   = createTestSuite(sys, params_true, settings.n_k_val  , settings.n_m_val  , settings.n_s_val  , cfg.options_testS);
+    params_true.testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, settings.n_s_val, cfg.options_testS);
 else
-    params_true.testSuite       = TS_in{1};
+    params_true.testSuite = TS_in{1};
     params_true.testSuite_train = TS_in{2};
-    params_true.testSuite_val   = TS_in{3};
+    params_true.testSuite_val = TS_in{3};
 end
 
 %% 3)  Assemble solver options ------------------------------------------
 
-options               = getConformanceOptions(optsReach, cost_norm, constraints, sys);
-options.cs.verbose     = false;
-options.cs.cost        = cost_norm;
+options = getConformanceOptions(optsReach, cost_norm, constraints, sys);
+options.cs.verbose = false;
+options.cs.cost = cost_norm;
 options.cs.constraints = constraints;
 
 % Gray‑box specific: initial parameter vector p0 and setter
 p0_centres = [center(params_true.R0); center(params_true.U)];
-options.cs.p0    = p0_centres;
+options.cs.p0 = p0_centres;
 options.cs.cp_lim = inf;
 options.cs.p_min = p0_centres - options.cs.cp_lim;
 options.cs.p_max = p0_centres + options.cs.cp_lim;
@@ -98,15 +98,15 @@ options.cs.set_p = @(p,params) set_p_centers(p, params, sys);
 options.cs.timeout = 600;  % seconds – can be overridden by caller
 
 % Weighting vector (for LS / max error)
-options.cs.w      = ones(1, settings.n_k);
+options.cs.w = ones(1, settings.n_k);
 
 %% 4)  Initial disturbance‑set guesses -----------------------------------
 
 c_R0 = zeros(size(center(params_true.R0)));
-c_U  = zeros(size(center(params_true.U)));
-params_id_init       = params_true;
-params_id_init.R0    = zonotope([c_R0 eye(sys.nrOfStates)]);
-params_id_init.U     = zonotope([c_U  eye(sys.nrOfInputs)]);
+c_U = zeros(size(center(params_true.U)));
+params_id_init = params_true;
+params_id_init.R0 = zonotope([c_R0 eye(sys.nrOfStates)]);
+params_id_init.U = zonotope([c_U  eye(sys.nrOfInputs)]);
 
 %% 5)  GRAY‑BOX identification -------------------------------------------
 
@@ -114,12 +114,12 @@ fprintf("\n[flexGrayBoxConform]  Identification using %s …\n", grayAlg);
 tmr = tic;
 [params_gray, resGray] = conform(sys, params_id_init, options, grayAlg); 
 T_ident = toc(tmr);
-fprintf("      finished in %.2f s\n", T_ident);
+fprintf("finished in %.2f s\n", T_ident);
 
 % Bundle outputs for downstream analysis
-results          = cell(2,1);
-results{1}       = struct('sys',sys, 'params',params_true , 'options',optsReach, 'name','true');
-results{2}       = struct('sys',resGray.sys, 'params',params_gray, 'options',optsReach, 'name',grayAlg);
+results = cell(2,1);
+results{1} = struct('sys',sys, 'params',params_true , 'options',optsReach, 'name','true');
+results{2} = struct('sys',resGray.sys, 'params',params_gray, 'options',optsReach, 'name',grayAlg);
 
 %% 6)  Reachability on identification data -------------------------------
 
@@ -145,15 +145,15 @@ completed = true;
 end  
 
 %% -----------------------------------------------------------------------
-% Helper – default parameter setter (centre‑vector update only)
+% Helper – default parameter setter
 % ------------------------------------------------------------------------
 function [sys_out, params_out] = set_p_centers(p, params_in, sys_in)
     c_R0 = p(1:dim(params_in.R0));
-    c_U  = p(dim(params_in.R0)+1:end);
-    params_out      = params_in;
-    params_out.R0   = zonotope(c_R0, generators(params_in.R0));
-    params_out.U    = zonotope(c_U , generators(params_in.U));
-    sys_out         = sys_in;  % no structural change to the model
+    c_U = p(dim(params_in.R0)+1:end);
+    params_out = params_in;
+    params_out.R0 = zonotope(c_R0, generators(params_in.R0));
+    params_out.U = zonotope(c_U , generators(params_in.U));
+    sys_out = sys_in;  % no structural change to the model
 end
 
 function validateReachableSets(testSuite, configs, n_k_val, methods, varargin)
