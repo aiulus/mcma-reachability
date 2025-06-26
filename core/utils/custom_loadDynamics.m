@@ -54,6 +54,51 @@ if nargin == 1
 end
 
 switch dynamics
+    case "testSys"
+        % This case reproduces the system from the original a_linearDT.m script
+        p_true = [];
+        dim_x = 5;
+        A_cont = [-1 -4 0 0 0; 4 -1 0 0 0; 0 0 -3 1 0; 0 0 -1 -3 0; 0 0 0 0 -2];
+        B_cont = ones(5,1);
+        C_cont = [1,0,0,0,0];
+        D_cont = 0;
+
+        % Define continuous time system
+        sys_c = ss(A_cont, B_cont, C_cont, D_cont);
+
+        % Convert to discrete system
+        samplingtime = 0.05;
+        sys_d = c2d(sys_c, samplingtime);
+        
+        % Create a CORA linearSysDT object from the discretized system
+        sys = linearSysDT(sys_d.A, sys_d.B, [], sys_d.C, sys_d.D, sys_d.Ts);
+
+        % Initial state set and input set
+        R0 = zonotope(ones(dim_x,1), 0.1*diag(ones(dim_x,1)));
+        U = zonotope(10, 0.25);
+    case "testSys2"
+        % This case reproduces the system from the original a_linearDT.m script
+        p_true = [];
+        dim_x = 5;
+        A_cont = [-1 -4 0 0 0; 4 -1 0 0 0; 0 0 -3 1 0; 0 0 -1 -3 0; 0 0 0 0 -2];
+        B_cont = ones(5,1);
+        C_cont = eye(5);
+        D_cont = zeros(5, 1);
+
+        % Define continuous time system
+        sys_c = ss(A_cont, B_cont, C_cont, D_cont);
+
+        % Convert to discrete system
+        samplingtime = 0.05;
+        sys_d = c2d(sys_c, samplingtime);
+        
+        % Create a CORA linearSysDT object from the discretized system
+        sys = linearSysDT(sys_d.A, sys_d.B, [], sys_d.C, sys_d.D, sys_d.Ts);
+
+        % Initial state set and input set
+        R0 = zonotope(ones(dim_x,1), 0.1*diag(ones(dim_x,1)));
+        U = zonotope(10, 0.25);
+
     case "mockSysARX"
         % Auto-regressive (AR) version of the mock system
         p_true = [];

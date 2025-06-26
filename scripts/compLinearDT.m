@@ -37,29 +37,29 @@ clear; clc;
 %systype = 'mockSysARX'; 
 %systype = 'polyNARX';
 
-systype = 'mockSys';
-dim = 4;
+%systype = 'mockSys';
 
-conformance_method = "gray";
+%% TODO: Defined classes should only contain n=p
+%% OR: output-reachset version of DDRA?
+systype = 'testSys2';
+%dim = 4;
+
+conformance_method = "white";
 
 plot_toggle = struct('ddra', 1, 'cc', 0);
 
-rng(2);
+%rng(2);
+rand('seed', 1); 
 
 %% 1 - Simulate the system / generate the datasets
 % custom_loadDynamics - extends CORA's loadDynamics()
-sysparams.dim = dim;
+sysparams = struct(); % put x_dim here and pass it to custom_loadDynamics() for scalability analysis
+%sysparams.dim = 4;
 [sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand", sysparams);
 dt = sys.dt;
 
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
 % uses uncertainty set specifications in loadDynamics, option "standard"
-
-% initialSetupDDRA - just sets the uncertainty sets
-%[~, ~, W, Wmatzono] = initialSetupDDRA(sys, initpoints, T, ...
-%                                       0, 0, ...   % X0_center & X0_spread
-%                                       0.1, 0.2, ...   % U_center & U_spread
-%                                       -0.05, 0.1);  % W_center & W_spread
 
 % Create the datasets
 % getConfig() - Custom function. Sets hyperparameters such as the number of 
@@ -102,7 +102,8 @@ testSuites{3} = testSuite_val;
 
 % Initialize data structures for the zonotopes
 X0_set = []; U_set = []; 
-W = zonotope(zeros(sys.nrOfOutputs, 1), 0*eye(sys.nrOfOutputs, size(X_1T, 2)));
+%W = zonotope(zeros(sys.nrOfOutputs, 1), 0*eye(sys.nrOfOutputs, size(X_1T, 2)));
+W = zonotope(zeros(sys.nrOfStates, 1), 0*eye(sys.nrOfStates, size(X_1T, 2)));
 
 % estimateAB_ddra - Custom function. Computes $\mathcal{M}_{AB}$ 
 %                   (also annotated as $\mathcal{M}_{\Sigma}$$ according to
@@ -122,9 +123,9 @@ if plot_toggle.ddra
     projectedDims = {[1 2]};
     axx{1} = [0.75,1.5,0.5,4]; axx{2} = [0.75,3,0.8,2.2];axx{3} = [0.75,2.3,0.75,2.8];
     numberofplots = length(X_model_P2); %length(X_model_P2)
-    %visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
-    visualizeDDRA(params.R0, X_model_P2, X_data_P2, ...
-              projectedDims, axx, numberofplots);
+    visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
+    %visualizeDDRA(params.R0, X_model_P2, X_data_P2, ...
+    %          projectedDims, axx, numberofplots);
 end
 
 %% 3 - Run the Conformance Checking pipeline
@@ -146,4 +147,38 @@ switch conformance_method
 end
 
 
+cc_reachsets = R_id{1};
+cc_reachsets = cc_reachsets{1};
+ddra_reachsets = X_data_P2;
 
+cc_reachset_norms = [];
+for i=1:length(cc_reachsets)
+    cc_reachset_norms(i) = norm(cc_reachsets{i}); % Zonotope norms
+end
+ddra_reachset_norms = [];
+for i=1:length(ddra_reachsets)
+    ddra_reachset_norms(i) = norm(ddra_reachsets{i}); % Zonotope norms
+end
+
+
+%% --- Histograms ---------------------------------------------
+figure('Name','Zonotope norms over time');
+plot(cc_reachset_norms,'-o','LineWidth',1.5);  hold on;
+plot(ddra_reachset_norms,'-s','LineWidth',1.5);
+grid on;  xlabel('time index k');  ylabel('‖Z_k‖₂');
+legend({'CC','DDRA'},'Location','best');
+title('Evolution of reach-set norms');
+
+edges = linspace( ...
+           min([cc_reachset_norms(:); ddra_reachset_norms(:)]), ...
+           max([cc_reachset_norms(:); ddra_reachset_norms(:)]), 20);   % 20 bins
+
+figure('Name','Histogram of zonotope norms');  hold on;
+histogram(cc_reachset_norms,  edges, 'Normalization','probability', ...
+          'FaceAlpha',0.50, 'EdgeColor','none');
+histogram(ddra_reachset_norms,edges, 'Normalization','probability', ...
+          'FaceAlpha',0.50, 'EdgeColor','none');
+xlabel('‖Z‖₂');  ylabel('relative frequency');
+legend({'CC','DDRA'},'Location','best');
+title('Distribution of reach-set norms');
+grid on;
