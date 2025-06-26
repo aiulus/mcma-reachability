@@ -22,7 +22,8 @@ clear; clc;
 %systype = 'mockSys'; 
 systype = 'polyNARX';
 dim = 4;
-dt = 0.1;
+
+conformance_method = 'gray';
 
 plot_toggle = struct('ddra', 0, 'cc', 0);
 
@@ -32,7 +33,7 @@ rng(2);
 % custom_loadDynamics - extends CORA's loadDynamics()
 sysparams.dim = dim;
 [sys, params.R0, params.U, params.p_true] = custom_loadDynamics(systype, "rand", sysparams);
-
+dt = sys.dt;
 
 %% (TODO) Consolidate: DDRA models process noise, CC msmt. noise
 % uses uncertainty set specifications in loadDynamics, option "standard"
@@ -106,4 +107,18 @@ end
 %% 3 - Run the Conformance Checking pipeline
 % Pass any relevant parameters to flexBlackBoxConform
 sysparams.cfg = cfg;
-[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+%[completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, 'testSuites', testSuites, 'sysparams', sysparams);
+
+switch conformance_method
+    case "black"
+        [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, ...
+            'testSuites', testSuites, 'sysparams', sysparams);
+    case "gray"
+        %grayAlg = ["graySim","graySeq","grayLS"]; % pass to
+        %flexGrayBoxConform(..., 'grayAlg', grayAlg) - default: graySeq
+        [completed, results, R_id, R_val] = flexGrayBoxConform('dynamics', systype, ...
+            'testSuites', testSuites, 'sysparams', sysparams);
+    case "white"
+        [completed, results, R_id, R_val] = flexWhiteBoxConform('dynamics', systype, ...
+            'testSuites', testSuites, 'sysparams', sysparams);
+end
