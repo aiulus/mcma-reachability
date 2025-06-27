@@ -154,36 +154,30 @@ for i=1:length(ddra_reachsets)
 end
 
 
-%% --- Histograms ---------------------------------------------
-figure('Name','Zonotope norms over time');
+%% --- Plots ---------------------------------------------
+fig1 = figure('Name','Zonotope norms over time');
 plot(cc_reachset_norms,'-o','LineWidth',1.5);  hold on;
 plot(ddra_reachset_norms,'-s','LineWidth',1.5);
 plot(true_reachset_norms,'-+','LineWidth',1.5);
 grid on;  xlabel('time index k');  ylabel('‖Z_k‖₂');
 legend({'CC','DDRA'},'Location','best');
 title('Evolution of reach-set norms');
-
-edges = linspace( ...
-           min([cc_reachset_norms(:); ddra_reachset_norms(:)]), ...
-           max([cc_reachset_norms(:); ddra_reachset_norms(:)]), 20);   % 20 bins
-
-figure('Name','Histogram of zonotope norms');  hold on;
-histogram(cc_reachset_norms,  edges, 'Normalization','probability', ...
-          'FaceAlpha',0.50, 'EdgeColor','none');
-histogram(ddra_reachset_norms,edges, 'Normalization','probability', ...
-          'FaceAlpha',0.50, 'EdgeColor','none');
-xlabel('‖Z‖₂');  ylabel('relative frequency');
-legend({'CC','DDRA'},'Location','best');
-title('Distribution of reach-set norms');
 grid on;
+
+outputDir = '../outputs/figures';
+if ~exist(outputDir, 'dir')
+   mkdir(outputDir)
+end
+saveas(fig1, fullfile(outputDir, 'reachset_norms_evolution.png'));
+fprintf('Saved figure to %s\n', fullfile(outputDir, 'reachset_norms_evolution.png'));
+
 
 %% TODO: 'visualizeAlinearDT' needs fixing
 % Visualize
 if plot_toggle.ddra
     projectedDims = {[1 2]};
-    axx{1} = [0.75,1.5,0.5,4]; axx{2} = [0.75,3,0.8,2.2];axx{3} = [0.75,2.3,0.75,2.8];
     numberofplots = length(X_model_P2); %length(X_model_P2)
-    visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
+    visualizeReachsets(params.R0, X_model_P2, X_data_P2, cc_reachsets, projectedDims, numberofplots);
     %visualizeDDRA(params.R0, X_model_P2, X_data_P2, ...
     %          projectedDims, axx, numberofplots);
 end

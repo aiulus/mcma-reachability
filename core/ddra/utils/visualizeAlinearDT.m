@@ -1,4 +1,4 @@
-function visualizeAlinearDT(X0, X_model, X_data, R_id, projectedDims, axx, numberofplots)
+function visualizeAlinearDT(X0, X_model, X_data, projectedDims, axx, numberofplots)
     % visualizeAlinearDT: Visualizes model-based vs data-driven reachable sets.
     %
     % Inputs:
@@ -10,9 +10,11 @@ function visualizeAlinearDT(X0, X_model, X_data, R_id, projectedDims, axx, numbe
     %   - numberofplots : number of propagation steps to visualize
     %
 
+    save = true;
+
     for plotRun = 1:length(projectedDims)
         
-        figure('Renderer', 'painters', 'Position', [10 10 700 900]);
+        fig = figure('Renderer', 'painters', 'Position', [10 10 700 900]);
 
         % Plot initial set
         handleX0 = plot(X0, projectedDims{plotRun}, 'k-', 'LineWidth', 2);
@@ -27,10 +29,6 @@ function visualizeAlinearDT(X0, X_model, X_data, R_id, projectedDims, axx, numbe
         % Plot reachable sets from data
         for iSet = 2:numberofplots
             handleData = plot(X_data{iSet}, projectedDims{plotRun}, 'r');
-        end
-
-        for iSet = 2:numberofplots
-            handleData = plot(R_id{iSet}, projectedDims{plotRun}, 'r');
         end
 
         % Label axes
@@ -61,4 +59,13 @@ function visualizeAlinearDT(X0, X_model, X_data, R_id, projectedDims, axx, numbe
     end
 
     fprintf('[visualizeAlinearDT] ✅ Visualization complete.\n');
+
+    if save
+        outputDir = '../outputs/figures';
+        if ~exist(outputDir, 'dir')
+           mkdir(outputDir)
+        end
+        saveas(fig, fullfile(outputDir, 'reachsets_evolution.png'));
+        fprintf('Saved figure to %s\n', fullfile(outputDir, 'reachsets_evolution.png'));
+    end
 end
