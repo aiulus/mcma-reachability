@@ -1,5 +1,5 @@
 # Comparing Direct and Indirect Reachability Analysis:
-## A Review on Conformance-based and Algebraic Methods
+## A Review on Conformance-Based and Model-Agnostic Methods
 ## Overview
 TODO
 ## Repository Structure
