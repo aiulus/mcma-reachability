@@ -1,15 +1,15 @@
 function config = getConfig()
     settings.n_m = 2; % #different input trajectories
     settings.n_s = 50; % #sample trajectories per input trajectory
-    settings.n_k = 4; % Length of the identification trajectories
+    settings.n_k = 10; % Length of the identification trajectories
 
     % Training and validation data
     settings.n_m_train = 100;
     settings.n_s_train = 10;
-    settings.n_k_train = 4;
+    settings.n_k_train = 10;
     settings.n_m_val = 5;
     settings.n_s_val = 10;
-    settings.n_k_val = 4;    
+    settings.n_k_val = 10;    
 
     config.settings = settings;
 

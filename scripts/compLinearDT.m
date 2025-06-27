@@ -44,7 +44,7 @@ clear; clc;
 systype = 'testSys2';
 %dim = 4;
 
-conformance_method = "white";
+conformance_method = "gray";
 
 plot_toggle = struct('ddra', 1, 'cc', 0);
 
@@ -117,16 +117,6 @@ totalsteps = settings.n_k_train; % #(identification steps after identification)
 %                 $\mathcal{M}_{AB}$ to compute the reachable sets. 
 [X_model_P2, X_data_P2] = propagateDDRA(U_full, X_0T, X_1T, params.R0, params.U, W, sys, M_ab, totalsteps);
 
-%% TODO: 'visualizeAlinearDT' needs fixing
-% Visualize
-if plot_toggle.ddra
-    projectedDims = {[1 2]};
-    axx{1} = [0.75,1.5,0.5,4]; axx{2} = [0.75,3,0.8,2.2];axx{3} = [0.75,2.3,0.75,2.8];
-    numberofplots = length(X_model_P2); %length(X_model_P2)
-    visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
-    %visualizeDDRA(params.R0, X_model_P2, X_data_P2, ...
-    %          projectedDims, axx, numberofplots);
-end
 
 %% 3 - Run the Conformance Checking pipeline
 % Pass any relevant parameters to flexBlackBoxConform
@@ -150,14 +140,17 @@ end
 cc_reachsets = R_id{1};
 cc_reachsets = cc_reachsets{1};
 ddra_reachsets = X_data_P2;
+true_reachsets = X_model_P2;
 
 cc_reachset_norms = [];
 for i=1:length(cc_reachsets)
-    cc_reachset_norms(i) = norm(cc_reachsets{i}); % Zonotope norms
+    cc_reachset_norms(i) = norm(cc_reachsets{i}); 
 end
 ddra_reachset_norms = [];
+true_reachset_norms = [];
 for i=1:length(ddra_reachsets)
-    ddra_reachset_norms(i) = norm(ddra_reachsets{i}); % Zonotope norms
+    ddra_reachset_norms(i) = norm(ddra_reachsets{i}); 
+    true_reachset_norms(i) = norm(true_reachsets{i});
 end
 
 
@@ -165,6 +158,7 @@ end
 figure('Name','Zonotope norms over time');
 plot(cc_reachset_norms,'-o','LineWidth',1.5);  hold on;
 plot(ddra_reachset_norms,'-s','LineWidth',1.5);
+plot(true_reachset_norms,'-+','LineWidth',1.5);
 grid on;  xlabel('time index k');  ylabel('‖Z_k‖₂');
 legend({'CC','DDRA'},'Location','best');
 title('Evolution of reach-set norms');
@@ -182,3 +176,14 @@ xlabel('‖Z‖₂');  ylabel('relative frequency');
 legend({'CC','DDRA'},'Location','best');
 title('Distribution of reach-set norms');
 grid on;
+
+%% TODO: 'visualizeAlinearDT' needs fixing
+% Visualize
+if plot_toggle.ddra
+    projectedDims = {[1 2]};
+    axx{1} = [0.75,1.5,0.5,4]; axx{2} = [0.75,3,0.8,2.2];axx{3} = [0.75,2.3,0.75,2.8];
+    numberofplots = length(X_model_P2); %length(X_model_P2)
+    visualizeAlinearDT(params.R0, X_model_P2, X_data_P2, projectedDims, axx, numberofplots);
+    %visualizeDDRA(params.R0, X_model_P2, X_data_P2, ...
+    %          projectedDims, axx, numberofplots);
+end

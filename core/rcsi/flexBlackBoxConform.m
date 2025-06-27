@@ -62,7 +62,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     % or the numbers of trajectories), edit getConfig() or the hard-coded lines
     % inside this function directly.
     % --------------------------------------------------------------------
-    rng(2)
+    rand('seed', 1); 
     
     % Parse optional arguments
     p = inputParser;
@@ -132,9 +132,10 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     params_id_init = params_true;
     %params_id_init.R0 = zonotope(c_R0);
     params_id_init.R0 = params_true.R0;
+    params_id_init.U = params_true.U;
     %% Debug statement
     %params_id_init.R0 = zonotope(zeros(0, 1));
-    params_id_init.U = zonotope([c_U eye(size(c_U, 1)) ones(size(c_U))]);
+    %params_id_init.U = zonotope([c_U eye(size(c_U, 1)) ones(size(c_U))]);
 
     % Identification ------------------------------------------------------
     for i = 1:length(methodsGray)

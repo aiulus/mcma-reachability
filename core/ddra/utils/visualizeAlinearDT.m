@@ -1,4 +1,4 @@
-function visualizeAlinearDT(X0, X_model, X_data, projectedDims, axx, numberofplots)
+function visualizeAlinearDT(X0, X_model, X_data, R_id, projectedDims, axx, numberofplots)
     % visualizeAlinearDT: Visualizes model-based vs data-driven reachable sets.
     %
     % Inputs:
@@ -29,6 +29,10 @@ function visualizeAlinearDT(X0, X_model, X_data, projectedDims, axx, numberofplo
             handleData = plot(X_data{iSet}, projectedDims{plotRun}, 'r');
         end
 
+        for iSet = 2:numberofplots
+            handleData = plot(R_id{iSet}, projectedDims{plotRun}, 'r');
+        end
+
         % Label axes
         xlabel(['x_{', num2str(projectedDims{plotRun}(1)), '}']);
         ylabel(['x_{', num2str(projectedDims{plotRun}(2)), '}']);
@@ -41,7 +45,7 @@ function visualizeAlinearDT(X0, X_model, X_data, projectedDims, axx, numberofplo
         % Handle legends without warning spam
         warOrig = warning; warning('off','all');
         legend([handleX0, handleModel, handleData], ...
-            'Initial Set', 'Set from Model', 'Set from Data', 'Location', 'northwest');
+            'Initial Set', 'R_true', 'R_ddra', 'R_cc', 'Location', 'northwest');
         warning(warOrig);
 
         % Style axes
