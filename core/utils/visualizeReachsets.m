@@ -1,5 +1,5 @@
 function visualizeReachsets(X0, X_model, X_data, R_cc, projectedDims, numberofplots)
-    % visualizeAlinearDT: Visualizes model-based vs data-driven reachable sets.
+    % visualizeReachsets: Visualizes model-based vs data-driven reachable sets.
     %
     % Inputs:
     %   - X0            : initial zonotope
@@ -20,26 +20,15 @@ function visualizeReachsets(X0, X_model, X_data, R_cc, projectedDims, numberofpl
         min_x = inf; max_x = -inf;
         min_y = inf; max_y = -inf;
         
-        % Combine all sets into a single cell array for easier iteration
-        all_sets = [X_model, X_data, R_cc, {X0}];
+        % FIXED: Combine all sets into a single cell array, forcing all to be
+        % row vectors to prevent concatenation errors.
+        all_sets = [X_model(:).', X_data(:).', R_cc(:).', {X0}];
         
+        % FIXED: Simplified and more robust loop for calculating axis limits
         for i = 1:length(all_sets)
-            if ~isempty(all_sets{i}) && iscell(all_sets{i})
-                % Handle cases where an element is a cell itself
-                current_zono_cell = all_sets{i};
-                for j = 1:length(current_zono_cell)
-                    if ~isempty(current_zono_cell{j})
-                        pZono = project(current_zono_cell{j}, dims_to_plot);
-                        intHull = interval(pZono);
-                        min_x = min(min_x, infimum(intHull(1)));
-                        max_x = max(max_x, supremum(intHull(1)));
-                        min_y = min(min_y, infimum(intHull(2)));
-                        max_y = max(max_y, supremum(intHull(2)));
-                    end
-                end
-            elseif ~isempty(all_sets{i})
-                % Handle single zonotope objects
-                pZono = project(all_sets{i}, dims_to_plot);
+            current_zono = all_sets{i};
+            if ~isempty(current_zono) && isa(current_zono, 'zonotope')
+                pZono = project(current_zono, dims_to_plot);
                 intHull = interval(pZono);
                 min_x = min(min_x, infimum(intHull(1)));
                 max_x = max(max_x, supremum(intHull(1)));
@@ -81,7 +70,7 @@ function visualizeReachsets(X0, X_model, X_data, R_cc, projectedDims, numberofpl
         % --- Final Touches: Labels and Legend ---
         xlabel(['x_{', num2str(dims_to_plot(1)), '}']);
         ylabel(['x_{', num2str(dims_to_plot(2)), '}']);
-        title('Evolution of True, DDRA, and CC Reachable Sets');
+        title('Evolution of True, Data-Driven, and Conformant Reachable Sets');
         
         % Prevent legend warnings and create a comprehensive legend
         warOrig = warning; warning('off','all');
@@ -96,7 +85,7 @@ function visualizeReachsets(X0, X_model, X_data, R_cc, projectedDims, numberofpl
         box on;
     end
     
-    fprintf('[visualizeAlinearDT] ✅ Visualization complete.\n');
+    fprintf('[visualizeReachsets] ✅ Visualization complete.\n');
     
     if save_figure
         outputDir = '../outputs/figures';

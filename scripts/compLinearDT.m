@@ -44,7 +44,7 @@ clear; clc;
 systype = 'testSys2';
 %dim = 4;
 
-conformance_method = "gray";
+conformance_method = "black";
 
 plot_toggle = struct('ddra', 1, 'cc', 0);
 
@@ -124,8 +124,13 @@ sysparams.cfg = cfg;
 
 switch conformance_method
     case "black"
+        testSuites_cell = {
+            reshapeTestSuiteLinear(testSuite, sys), ...
+            reshapeTestSuiteLinear(testSuite_train, sys), ...
+            reshapeTestSuiteLinear(testSuite_val, sys)
+        };
         [completed, results, R_id, R_val] = flexBlackBoxConform('dynamics', systype, ...
-            'testSuites', testSuites, 'sysparams', sysparams);
+            'testSuites', testSuites_cell, 'sysparams', sysparams);
     case "gray"
         %grayAlg = ["graySim","graySeq","grayLS"]; % pass to
         %flexGrayBoxConform(..., 'grayAlg', grayAlg) - default: graySeq

@@ -88,7 +88,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     cost_norm = "interval"; % norm for the reachable set: "interval","frob"        
     constraints = "half"; % constraint type: "half", "gen"        
     %methodsGray = ["blackGP","blackCGP"]; % identification approach    
-    methodsGray = "blackCGP";
+    methodsGray = "blackGP";
     methods = ["true" methodsGray];
 
     % Load system dynamics
@@ -127,15 +127,9 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     results{1}.name = "true";
 
     % Initial Estimates of the Disturbance Sets
-    c_R0 = center(params_true.R0);
-    c_U = center(params_true.U);
     params_id_init = params_true;
-    %params_id_init.R0 = zonotope(c_R0);
     params_id_init.R0 = params_true.R0;
     params_id_init.U = params_true.U;
-    %% Debug statement
-    %params_id_init.R0 = zonotope(zeros(0, 1));
-    %params_id_init.U = zonotope([c_U eye(size(c_U, 1)) ones(size(c_U))]);
 
     % Identification ------------------------------------------------------
     for i = 1:length(methodsGray)

@@ -58,7 +58,7 @@ end
 dim_y = size(params.testSuite{1}.y, 2);
 dim_u = size(params.testSuite{1}.u, 2);
 dt = params.testSuite{1}.sampleTime;
-sys_approx = nonlinearARX(type,f,dt, dim_y,dim_u, options.approx.p);
+sys_approx = nonlinearARX(type,f,dt, dim_y, dim_u, options.approx.p);
 if options.approx.save_res
     save(options.approx.filename + "_sys", 'sys_approx');
 end
