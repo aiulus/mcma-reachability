@@ -100,6 +100,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
     % Build test suites
     if isempty(TS_in)
         % Use createTestSuite from CORA
+        %% TODO: Match the random seeds with an additional input arg
         params_true.testSuite = createTestSuite(sys, params_true, settings.n_k, settings.n_m, settings.n_s, options_testS);
         params_true.testSuite_train = createTestSuite(sys, params_true, settings.n_k_train, settings.n_m_train, settings.n_s_train);
         params_true.testSuite_val = createTestSuite(sys, params_true, settings.n_k_val, settings.n_m_val, settings.n_s_val);
@@ -146,6 +147,21 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
         % ar_dim_y = size(testSuite{1}.y, 2)*p + size(testSuite{1}.u, 2)*(p+1)
         
         sys_mock = nonlinearARX(f_placeholder, dt, dim_y, dim_u, n_p);
+    
+        sys_mock = nonlinearSysDT(f_placeholder, dt, dim_y, dim_u);
+
+        %% DEBUG STATEMENTS: Overwriting sys_mock with a linearARX system
+        %A_bar = cell(sys.nrOfStates, 1);
+        %for k=1:sys.nrOfStates
+        %    A_bar{k} = zeros(sys.nrOfStates, 1);
+        %end
+        %B_bar = cell(sys.nrOfStates, 1);
+        %for m=1:sys.nrOfStates
+        %    B_bar{m} = zeros(sys.nrOfInputs, 1);
+        %end
+        %sys_mock = linearARX(A_bar, B_bar, dt);
+        %%
+
         params_id_init.sys_mock = sys_mock;        
         params_id_init.sys = sys;
 

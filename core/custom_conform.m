@@ -1,4 +1,4 @@
-function [params, results] = custom_conform(sys,params,options,varargin)
+function [params, results] = conform(sys,params,options,varargin)
 % conform - performs reachset conformance by computing the reachable 
 %         of a system and checking whether all measurements are included
 %
@@ -52,7 +52,7 @@ type = setDefaultValues({"white"},varargin);
 switch type
     case "RRT"
         % synthesize conformance using RRTs, see [1]    
-        [params, R, simRes] = conform_RRT(sys, params, options);
+        [params, R, simRes] = priv_conform_RRT(sys, params, options);
         results.R = R;
         results.simRes = simRes;
 
@@ -60,8 +60,7 @@ switch type
 
         if contains(type,"black") % blackGP, blackCGP
             % approximate the system dynamics
-            %sys = custom_conform_black(params, options, type);
-            sys = conform_black(params, options, type);
+            sys = priv_conform_black(params, options, type);
             results.sys = sys;
             options = rmfield(options, 'approx');
             params = rmfield(params, ["testSuite_train","testSuite_val"]);
@@ -73,12 +72,12 @@ switch type
     
         % Identify conformant parameters
         if type == "white" || contains(type,"black")
-            [params, fval, p_opt,  union_y_a] = custom_conform_white(sys_upd, params, options);
+            [params, fval, p_opt,  union_y_a] = priv_conform_white(sys_upd, params, options);
             results.sys = sys;
             results.unifiedOutputs = union_y_a;
     
         elseif contains(type,"gray") % "graySim", "graySeq", "grayLS"
-            [params, fval, p_opt, sys_opt] = conform_gray(sys_upd, params, options, type);
+            [params, fval, p_opt, sys_opt] = priv_conform_gray(sys_upd, params, options, type);
             results.sys = sys_opt;
         end
     
@@ -170,7 +169,7 @@ end
 
 % Adaption initial state to state-space models
 if ~isa(sys, 'linearARX') && ~isa(sys, 'nonlinearARX') 
-    if sys.nrOfStates == size(testSuite{1}.initialState,1)
+    if sys.nrOfDims == size(testSuite{1}.initialState,1)
         % all good
         return
     end
@@ -192,7 +191,7 @@ end
 n_m = length(testSuite);
 testSuite_new = {};
 for m=1:n_m
-    testSuite_new = [testSuite_new; setInitialStateToMeas(testSuite{m},sys.nrOfStates)];
+    testSuite_new = [testSuite_new; setInitialStateToMeas(testSuite{m},sys.nrOfOutputs)];
 end
 testSuite = testSuite_new;
 

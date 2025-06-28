@@ -68,6 +68,13 @@ dt = sys.dt;
 %               configuration files. 
 cfg = getConfig();
 settings = cfg.settings;
+
+%% DEBUG STATEMENT - TODO: Remove when done
+settings.n_k = 2;
+settings.n_k_train = 2;
+settings.n_k_val = 2;
+%%
+
 k = settings.n_m_train;
 T_k = settings.n_k_train;
 
