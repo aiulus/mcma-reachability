@@ -150,7 +150,7 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
         params_id_init.sys = sys;
 
         tic;
-        [results{i+1}.params, results] = custom_conform(sys_mock, params_id_init, options, type);
+        [results{i+1}.params, results] = conform(sys_mock, params_id_init, options, type);
         Ts = toc;       
         
         % After the loop, 'identified_systems' will contain four separate models.

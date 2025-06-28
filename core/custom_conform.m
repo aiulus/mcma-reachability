@@ -60,7 +60,8 @@ switch type
 
         if contains(type,"black") % blackGP, blackCGP
             % approximate the system dynamics
-            sys = custom_conform_black(params, options, type);
+            %sys = custom_conform_black(params, options, type);
+            sys = conform_black(params, options, type);
             results.sys = sys;
             options = rmfield(options, 'approx');
             params = rmfield(params, ["testSuite_train","testSuite_val"]);
