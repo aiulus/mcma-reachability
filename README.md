@@ -1,5 +1,4 @@
-# Comparing Direct and Indirect Reachability Analysis:
-## A Review on Conformance-Based and Model-Agnostic Methods
+# A Contrastive Analysis of Model-Centric and Model-Agnostic Reachability Analysis Methods
 ## Overview
 TODO
 ## Repository Structure
