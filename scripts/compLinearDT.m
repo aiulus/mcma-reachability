@@ -42,6 +42,7 @@ clear; clc;
 %% TODO: Defined classes should only contain n=p
 %% OR: output-reachset version of DDRA?
 systype = 'testSys2';
+%systype = 'nonlinearARX';
 %dim = 4;
 
 conformance_method = "black";
@@ -70,9 +71,9 @@ cfg = getConfig();
 settings = cfg.settings;
 
 %% DEBUG STATEMENT - TODO: Remove when done
-settings.n_k = 2;
-settings.n_k_train = 2;
-settings.n_k_val = 2;
+%settings.n_k = 2;
+%settings.n_k_train = 2;
+%settings.n_k_val = 2;
 %%
 
 k = settings.n_m_train;
@@ -90,7 +91,7 @@ testSuites{3} = testSuite_val;
 
 % union_testSuites - Custom function. Builds the union of multiple
 %                    testSuite objects. 
-%complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
+complete_testSuite = union_testSuites(testSuite, testSuite_train, testSuite_val);
 
 %% ACHTUNG!!-- aux_CORAtoDDRA currently propagates X0 with (A, B, C, D)
 %%          -- only use systems with n=p in the future!
@@ -99,7 +100,8 @@ testSuites{3} = testSuite_val;
 
 % aux_CORAtoDDRA - Custom function that converts testSuite objects to data
 %                  representation format that the DDRA pipeline expects
-[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
+%[x_all, utraj_all] = narx_CORAtoDDRA(testSuite_train);
+[x_all, utraj_all] = narx_CORAtoDDRA(complete_testSuite);
 %[x_all, utraj_all] = dataTransform_CORA2DDRA(testSuite_train);
 
 % getTrajsDDRA - Custom function. Takes single-trajectory data and creates
