@@ -1,13 +1,15 @@
-function [ytraj, ytraj_v, utraj] = getDataDDRA_output(sys, initpoints, steps, X0, U, W)
+function [ytraj, ytraj_v, utraj] = getDataDDRA_output(sys_d, initpoints, steps, X0, W, V, u_seq)
     x0 = X0.c;
     ytraj(:, 1) = x0;
     index = 1;
 
-    dim_x = sys.nrOfStates;
+    % System dimensions, assuming p = n (CORA)
+    %dim_x = sys_d.nrOfStates;
 
-    for i=1:totalsamples
-        u(i) = randPoint(U);
-    end
+    % System dimensions, assuming p = n (ss)
+    dim_x = size(sys_d.A, 1);
+
+    u = u_seq;
 
     for j=1:dim_x:initpoints*dim_x
         ytraj(j:j+dim_x-1,1) = randPoint(X0); % initpoints many starting points sampled from X0
