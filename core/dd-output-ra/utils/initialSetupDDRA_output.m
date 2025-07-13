@@ -13,7 +13,7 @@ function [X0, U, W, M_w, V, M_v, AV, M_Av] = initialSetupDDRA_output( ...
     % System dimensions, assuming p = n (ss)
     n = size(sys.A, 1);
     m = size(sys.B, 2);
-    totalsamples = initpoints * (steps - 1) * n_s;
+    totalsamples = initpoints * (steps - 1);
 
     % Initial output set
     X0 = zonotope(X0_center, X0_spread * ones(n, x0GenOrder));

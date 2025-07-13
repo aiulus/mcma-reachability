@@ -74,10 +74,9 @@ if isa(sys,'linearSysDT') || isa(sys,'linearARX')
     u=[];
     x0 = [];
     y = [];
+else
+    testSuite = cell(n_m,1);
 end
-
-testSuite = cell(n_m,1);
-
 for m = 1:n_m
     % sample a random nominal input trajectory of the specified curve type
     u_m = aux_createCurve(sys.nrOfInputs,n_k,sys.dt,options);

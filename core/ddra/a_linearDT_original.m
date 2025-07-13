@@ -22,6 +22,8 @@ rand('seed', 1);
 
 clear all
 %close all
+
+%% ------------- 0.1. System: Generic Properties -------------
 %% system dynamics
 dim_x = 5;
 A = [-1 -4 0 0 0; 4 -1 0 0 0; 0 0 -3 1 0; 0 0 -1 -3 0; 0 0 0 0 -2];
@@ -34,12 +36,17 @@ sys_c = ss(A,B_ss,C,D);
 samplingtime = 0.05;
 sys_d = c2d(sys_c,samplingtime);
 
+%% ------------- 0.2. Sample Properties -------------
+
 cfg = getConfig();
 settings = cfg.settings;
 
 initpoints = settings.n_m * settings.n_s;
 steps = settings.n_k;
 totalsamples = initpoints*steps;
+%% ------------- 0.3. X0, U, W, M_w ------------->> initialSetupDDRA
+%[X0, U, W, Wmatzono] = initialSetupDDRA(sys, initpoints, steps, ...
+%    X0_center, X0_spread, U_center, U_spread, W_center, W_spread);
 %% initial set and input
 X0 = zonotope(ones(dim_x,1),0.1*diag(ones(dim_x,1)));
 U = zonotope(10,0.25);
@@ -59,6 +66,8 @@ for i=1:size(W.generators,2)
 end
 Wmatzono= matZonotope(zeros(dim_x,totalsamples),GW);
 
+%% ------------- 1.1. Data Generation ------------->> getDataDDRA
+% [x, utraj] = getDataDDRA(sys, initpoints, steps, X0, U, W);
 
 % randomly choose constant inputs for each step / sampling time
 for i=1:totalsamples
@@ -93,6 +102,11 @@ for j=1:dim_x:initpoints*dim_x
     end
 end
 
+
+%% ------------- 1.2. Compute Time-Shifted Trajectories ------------->> getTrajsDDRA
+% [U_full, X_0T, X_1T] = ...
+%    getTrajsDDRA(sys, initpoints, steps, x, utraj, plot_toggle);
+
 % X_+ is X_1T
 % X_- is X_0T
 U_full = u_mean_vec_0(:,1:totalsamples); %same as u 
@@ -100,6 +114,7 @@ X_0T = x_meas_vec_0(:,1:totalsamples);
 X_1T = x_meas_vec_1(:,1:totalsamples);
 
 
+%% ------------- 1.X. Visualize Trajectories -------------
 % plot simulated trajectory
 figure;
 subplot(1,2,1); hold on; box on; plot(x(1,:),x(2,:),'b'); xlabel('x_1'); ylabel('x_2');
@@ -107,20 +122,24 @@ subplot(1,2,2); hold on; box on; plot(x(3,:),x(4,:),'b'); xlabel('x_3'); ylabel(
 close;
 
 
-
+%% ------------- 2.1. Compute M_Sigma ------------->> estimateAB_ddra
+%M_ab = estimateAB_ddra(sys_d, X_0T, X_1T, U_full, Wmatzono);
 X1W_cen =  X_1T - Wmatzono.center;
 X1W = matZonotope(X1W_cen,Wmatzono.generator);
 
 % set of A and B
 AB = X1W  *pinv([X_0T;U_full]);
 
+
+%% ------------- 2.2. Validate M_Sigma -------------
 % validate that A and B are within AB
 intAB11 = intervalMatrix(AB);
 intAB1 = intAB11.int;
 intAB1.sup >= [sys_d.A,sys_d.B]
 intAB1.inf <= [sys_d.A,sys_d.B]
 
-
+%% ------------- 3.1. Main Part ------------->> propagateDDRA (with the loop header)
+% [X_model, X_data] = propagateDDRA(X0, U, W, sys_d, M_ab, totalsteps);
 
 %% compute next step sets from model / data
 
@@ -132,7 +151,7 @@ X_data = cell(totalsteps+1,1);
 X_model{1} = X0; X_data{1} = X0;
 
 for i=1:totalsteps
-    
+    %% ------------- 3.2. Compute Reachable Sets -------------
     % 1) model-based computation
     X_model{i,1}=reduce(X_model{i,1},'girard',400);
     X_model{i+1,1} = sys_d.A * X_model{i} + sys_d.B * U+W;

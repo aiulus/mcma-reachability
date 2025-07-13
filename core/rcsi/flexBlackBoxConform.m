@@ -148,6 +148,8 @@ function [completed, results, R_id, R_val] = flexBlackBoxConform(varargin)
         
         sys_mock = nonlinearARX(f_placeholder, dt, dim_y, dim_u, n_p);
     
+        dim_y = sys.nrOfOutputs;
+        dim_u = sys.nrOfInputs;
         sys_mock = nonlinearSysDT(f_placeholder, dt, dim_y, dim_u);
 
         %% DEBUG STATEMENTS: Overwriting sys_mock with a linearARX system

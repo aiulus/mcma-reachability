@@ -1,4 +1,4 @@
-function [x_all, utraj_all] = narx_CORAtoDDRA(testSuite)
+function [x_all, utraj_all] = linear_CORAtoDDRA(testSuite)
 % narx_CORAtoDDRA - Convert CORA testSuite to DDRA-compatible flat data format.
 % Assumes y = x (full observability) and sys is a NARX system with .mFile handle
 

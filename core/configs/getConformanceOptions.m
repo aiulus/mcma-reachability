@@ -14,6 +14,9 @@ function options = getConformanceOptions(options_reach, cost_norm, constraints, 
     % Black-box approximation options
     options.approx.gp_parallel = true;
     options.approx.gp_pop_size = 50;
+    %% ACHTUNG - CHANGE BACK TO 50 / REMOVE THE FOLLOWING LINE AFTER DEBUGGING
+    options.approx.gp_pop_size = 5;
+    %%
     options.approx.gp_num_gen = 30;
     options.approx.gp_func_names = {'times','plus', 'square'};
     options.approx.gp_max_genes = 2;
@@ -22,9 +25,8 @@ function options = getConformanceOptions(options_reach, cost_norm, constraints, 
     options.approx.cgp_num_gen = 5;
     options.approx.cgp_pop_size_base = 5;
     options.approx.save_res = false;
-    %options.approx.p = sys.n_p;
-    %options.approx.p = sys.nrOfOutputs;
     options.approx.p = 1;
+    %options.approx.p = 0; % Added after the error in nonlinearARX/computeGO - line 109
     options.approx.verbose = false;
     options.approx.filename = 'temp_gp_results';
     options.approx.gp_runs = 10;

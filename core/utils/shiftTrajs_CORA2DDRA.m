@@ -13,18 +13,8 @@ function [X_0T, X_1T, U_0T, U_1T, U_full] = shiftTrajs_CORA2DDRA(testSuite)
 
     K                 = numel(testSuite);               % #nominal curves
     [T_k, dim_y, s]   = size(testSuite{1}.y);           % horizon, outputs, samples
+    dim_u = size(testSuite{1}.u, 2);
     T_km1             = T_k - 1;
-
-    % ---- robust input-dimension detection (same logic as dataTransform) ---
-    size_u0 = size(testSuite{1}.u);
-    if numel(size_u0) == 3            % linearSysDT path   (n_u × T_k × s)
-        dim_u = size_u0(1);
-    elseif size_u0(1) == T_k          % nonlinear/NARX     (T_k × n_u)
-        dim_u = size_u0(2);
-    else
-        dim_u = size_u0(1);           % rare fallback
-    end
-    % -----------------------------------------------------------------------
 
     nTraj         = K * s;                                % total trajectories
     cols_full     = nTraj * T_k;                          % per-step matrices

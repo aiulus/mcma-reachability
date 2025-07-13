@@ -54,6 +54,74 @@ if nargin == 1
 end
 
 switch dynamics
+    case "test_nlARX"
+        p_true = [];
+        A_c = [-1 -4 0 0 0;
+                4 -1 0 0 0;
+                0  0 -3 1 0;
+                0  0 -1 -3 0;
+                0  0  0  0 -2];
+        B_c = ones(5,1);
+        
+        dt  = 0.05;                               % sampling time
+        sys_d = c2d(ss(A_c,B_c,eye(5),0), dt);    % MATLAB ZOH discretisation
+        A_d  = sys_d.A;   B_d = sys_d.B;
+        
+        %%  Step 1  –  ARX function handle (linear but declared “nonlinear” in CORA)
+        f_arx = @(y_hist, u_hist) ...
+                A_d * y_hist(1:5) + B_d * u_hist(1);   % uses y[k-1] and u[k]
+        
+        %%  Step 2  –  wrap it into a nonlinearARX object
+        p      = 1;                 % number of past outputs/inputs
+        dim_y  = 5;                 % output dimension (=state dimension)
+        dim_u  = 1;                 % single scalar input
+        
+        sys_arx = nonlinearARX('lin2nonlinSys_ARX', ...
+                               f_arx, dt, dim_y, dim_u, p);
+        
+        %%  Step 3  –  initial sets (same statistical shape as original)
+        R0_arx = zonotope(ones(dim_y,1), 0.1*eye(dim_y));  % history y[k-1]
+        U_arx  = zonotope(10, 0.25);                       % input set
+
+        sys = sys_arx; R0 = R0_arx; U = U_arx;
+
+    case "test_nlSysDT"
+        % Syntax:
+        %    % only dynamic equation
+        %    nlnsysDT = nonlinearSysDT(fun,dt)
+        %    nlnsysDT = nonlinearSysDT(name,fun,dt)
+        %    nlnsysDT = nonlinearSysDT(fun,dt,states,inputs)
+        %    nlnsysDT = nonlinearSysDT(name,fun,dt,states,inputs)
+        %
+        %    % dynamic equation and output equation
+        %    nlnsysDT = nonlinearSysDT(fun,dt,out_fun)
+        %    nlnsysDT = nonlinearSysDT(name,fun,dt,out_fun)
+        %    nlnsysDT = nonlinearSysDT(fun,dt,states,inputs,out_fun,outputs)
+        %    nlnsysDT = nonlinearSysDT(name,fun,dt,states,inputs,out_fun,outputs)
+        %
+
+        p_true = [];
+        dim_x = 5;
+        A_cont = [-1 -4 0 0 0; 4 -1 0 0 0; 0 0 -3 1 0; 0 0 -1 -3 0; 0 0 0 0 -2];
+        B_cont = ones(5,1);
+        C_cont = eye(5);
+        %C_cont = [1,0,0,0,0];
+        D_cont = 0;
+
+        % Initial state set and input set
+        R0 = zonotope(ones(dim_x,1), 0.1*diag(ones(dim_x,1)));
+        U = zonotope(10, 0.25);
+        
+        sys_c = ss(A_cont, B_cont, C_cont, D_cont); % Define continuous time system    
+        samplingtime = 0.05; % Convert to discrete system
+        sys_d = c2d(sys_c, samplingtime);
+        dim_y = size(C_cont, 1);
+        dim_u = size(B_cont, 2);
+        dt = samplingtime;
+        f = @(x,u) sys_d.A * x + sys_d.B * u;
+        g = @(x,u) sys_d.C * x + sys_d.D * u;
+        sys = nonlinearSysDT('lin2nonlinSys', f, dt, dim_x, dim_u, g, dim_y);
+        % nlnsysDT = nonlinearSysDT(name,fun,dt,states,inputs,out_fun,outputs)
     case "testSys"
         % This case reproduces the system from the original a_linearDT.m script
         p_true = [];
@@ -94,6 +162,7 @@ switch dynamics
         
         % Create a CORA linearSysDT object from the discretized system
         sys = linearSysDT(sys_d.A, sys_d.B, [], sys_d.C, sys_d.D, sys_d.Ts);
+        %sys.n_p = 0; % Added after the error in nonlinearARX/computeGO - line 109
 
         % Initial state set and input set
         R0 = zonotope(ones(dim_x,1), 0.1*diag(ones(dim_x,1)));
